@@ -122,7 +122,7 @@ Templates define **input variables** -- toggles, text fields, and dropdowns -- t
 The combination of O3DE's template language, the wizard's descriptor format, and the modular command plugin system creates a layered code generation architecture:
 
 - **O3DE templates** handle raw file scaffolding and variable substitution in source code
-- **[Template descriptors](TemplateDescriptor/)** (`template.json`) define what the wizard should do with those files -- which commands to run, which variables to collect, which files are conditional
+- **[Template descriptors](template-descriptor/)** (`template.json`) define what the wizard should do with those files -- which commands to run, which variables to collect, which files are conditional
 - **[Command plugins](commands/)** execute the actual build integration -- modifying CMake files, module descriptors, and registration code
 
 Together, these layers allow complex class creation workflows to be defined entirely in JSON and Python, without modifying the wizard core. A gem author can ship a custom template that creates specialized component types, registers them in the correct build targets, adds cross-gem dependencies, and configures asset processing -- all through the template descriptor alone.
@@ -163,7 +163,7 @@ python ClassWizard.py --engine-path "C:\o3de" --project-path "D:\MyProject" --te
 
 | Document | Contents |
 |---|---|
-| [CLI Reference](CLI/) | All command-line flags, full command shape, per-template examples, exit codes |
+| [CLI Reference](cli/) | All command-line flags, full command shape, per-template examples, exit codes |
 | [How Templates Work](templates/) | Template system overview, discovery, and index of all templates |
-| [Template Descriptor Format](TemplateDescriptor/) | Full reference for `template.json` -- structure, variables, conditions, file definitions, cleanup hints |
+| [Template Descriptor Format](template-descriptor/) | Full reference for `template.json` -- structure, variables, conditions, file definitions, cleanup hints |
 | [Command System](commands/) | How commands work, all built-in commands, and how to author new ones |

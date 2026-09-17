@@ -48,7 +48,7 @@ The `CommandPluginLoader` scans for Python files in three locations, loaded in t
 4. Registration commands (those with `is_registration_command = True`) only run when `--automatic-register` is enabled
 5. Each command receives a `CommandContext` and returns `True` (success) or `False` (failure)
 
-> **Note -- Conditional file exclusion is automatic.** You do not invoke a command to exclude files. Conditional file exclusion and reference cleanup (EBus scrubbing, editor include removal) is handled automatically before `process_commands` runs, based on the `condition` and `cleanup_hint` fields in each `copyFiles` entry. See the [Template Descriptor Format](../TemplateDescriptor/) for details.
+> **Note -- Conditional file exclusion is automatic.** You do not invoke a command to exclude files. Conditional file exclusion and reference cleanup (EBus scrubbing, editor include removal) is handled automatically before `process_commands` runs, based on the `condition` and `cleanup_hint` fields in each `copyFiles` entry. See the [Template Descriptor Format](../template-descriptor/) for details.
 
 ---
 

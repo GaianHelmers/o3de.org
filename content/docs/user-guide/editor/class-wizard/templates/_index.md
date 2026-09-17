@@ -58,7 +58,7 @@ You can create custom templates by placing a properly structured template direct
 2. A `Templates/<YourTemplate>/Template/` directory with your source files
 3. `${Variable}` tokens in file names and content for substitution
 
-See the [Template Descriptor Format](../TemplateDescriptor/) for the full JSON schema.
+See the [Template Descriptor Format](../template-descriptor/) for the full JSON schema.
 
 ---
 
@@ -110,4 +110,4 @@ Templates can mark files as conditional using the `condition` field in `copyFile
 | `"editor"` | `#include` lines referencing the excluded file |
 | *(omitted)* | File is deleted from staging; no reference cleanup |
 
-See the [Template Descriptor Format](../TemplateDescriptor/) for full details on conditions and cleanup hints.
+See the [Template Descriptor Format](../template-descriptor/) for full details on conditions and cleanup hints.
