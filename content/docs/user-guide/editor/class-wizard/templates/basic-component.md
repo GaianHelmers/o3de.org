@@ -1,7 +1,7 @@
 ---
 title: "Basic Component"
-linkTitle: "Basic Components"
-description: ""
+linkTitle: "Basic Component"
+description: "Template for creating a standard O3DE game component."
 weight: 20
 ---
 
@@ -17,19 +17,19 @@ The standard O3DE game component. Optionally generates an EBus interface header 
 |---|---|
 | `Source/${Name}Component.cpp` | Always |
 | `Source/${Name}Component.h` | Always |
-| `Include/${GemName}/${Name}Interface.h` | Only when `skip_interface` is false |
-| `Source/Editor${Name}Component.h` | Only when `include_editor` is true |
-| `Source/Editor${Name}Component.cpp` | Only when `include_editor` is true |
+| `Include/${GemName}/${Name}Interface.h` | Only when `add_bus_interface` is true |
+| `Source/Tools/Editor${Name}Component.h` | Only when `include_editor` is true |
+| `Source/Tools/Editor${Name}Component.cpp` | Only when `include_editor` is true |
 
-The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus wiring is removed from remaining files.
+The interface header carries `cleanup_hint: "interface"` -- if not requested, all EBus wiring is removed from remaining files.
 The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include` lines are stripped from siblings.
 
 **Input variables:**
 
 | Var Name | Type | Default | show_if | Description |
 |---|---|---|---|---|
-| `skip_interface` | toggle | false | -- | Omit `${Name}Interface.h` and all EBus wiring |
-| `include_editor` | toggle | false | `hasEditor` | Generate `Editor${Name}Component` for editor-side representation; only shown when gem has an Editor module |
+| `add_bus_interface` | toggle | `true` | -- | Create the Interface Bus header file |
+| `include_editor` | toggle | `false` | `hasEditor` | Generate an EditorComponent wrapper that appears in the Editor Inspector and exports the runtime component at game-mode; only shown when gem has an Editor module |
 
 **Commands:**
 
@@ -37,17 +37,17 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
 |---|---|---|
 | `register_file_list` | Always | Adds runtime `.h` / `.cpp` to CMake |
 | `register_module_descriptor` | Always | Registers component in runtime module |
-| `register_interface_header` | `!skip_interface` | Registers interface header in API/INTERFACE target |
+| `register_interface_header` | `add_bus_interface` | Registers interface header in API/INTERFACE target |
 | `register_file_list` | `include_editor` | Adds editor `.h` / `.cpp` to CMake |
 | `register_module_descriptor` (`module_kind: "editor"`) | `include_editor` | Registers EditorComponent in editor module |
 | `replace_text` | `include_editor` | Strips `AppearsInAddComponentMenu` from runtime `.cpp` so only the EditorComponent appears in the editor menu |
 
-**Notable features:** Only template with both conditional interface cleanup and conditional editor adapter. The `include_editor` toggle is hidden on gems without an Editor module (`show_if: "hasEditor"`).
+**Notable features:** Only template with both conditional interface cleanup and conditional editor adapter. The `include_editor` toggle is hidden on gems without an Editor module (`show_if: "hasEditor"`). Unlike most toggles, `add_bus_interface` defaults to `true` -- the interface header is generated unless explicitly turned off.
 
 
 ## Full Template JSON
 
-```
+```json
 {
     "template_name": "DefaultComponent",
     "origin": "Open 3D Engine - o3de.org",
@@ -77,7 +77,7 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
             "isTemplated": true,
             "isInterface": true,
             "cleanup_hint": "interface",
-            "condition": "!skip_interface"
+            "condition": "add_bus_interface"
         },
         {
             "file": "Source/Tools/Editor${Name}Component.h",
@@ -111,10 +111,10 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
         "input_vars": [
             {
                 "input_type": "toggle",
-                "var_name": "skip_interface",
-                "title": "Skip Interface",
-                "default_value": false,
-                "description": "Do not create the Interface.h file"
+                "var_name": "add_bus_interface",
+                "title": "Add Bus Interface",
+                "default_value": true,
+                "description": "Create the Interface Bus header file"
             },
             {
                 "input_type": "toggle",
@@ -137,7 +137,7 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
             },
             {
                 "command": "register_interface_header",
-                "condition": "!skip_interface",
+                "condition": "add_bus_interface",
                 "args": { "component_name": "${Name}" }
             },
             {
@@ -162,5 +162,4 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
         ]
     }
 }
-
 ```

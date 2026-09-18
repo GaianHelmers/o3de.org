@@ -7,33 +7,42 @@ weight: 30
 
 **Template name:** `LevelComponent`
 **CLI:** `--template level_component`
-**Suffix:** `Component` -- produces `${Name}Component`
+**Suffix:** `LevelComponent` -- produces `${Name}LevelComponent`
 
-A component that attaches to the level entity rather than individual game entities. Level components are useful for per-level services like weather systems, lighting controllers, or level-wide game logic. The component's `Activate()` / `Deactivate()` lifecycle is tied to level load and unload.
+A component that attaches to the level entity rather than individual game entities. Level components are useful for per-level services like weather systems, lighting controllers, or level-wide game logic. Optionally generates an EBus interface header and an EditorComponent wrapper for editor-side representation, the same as Basic Component.
 
 **Files generated:**
 
 | File | Conditional |
 |---|---|
-| `Source/${Name}Component.cpp` | Always |
-| `Source/${Name}Component.h` | Always |
-| `Include/${GemName}/${Name}Interface.h` | Only when `skip_interface` is false |
+| `Source/${Name}LevelComponent.cpp` | Always |
+| `Source/${Name}LevelComponent.h` | Always |
+| `Include/${GemName}/${Name}Interface.h` | Only when `add_bus_interface` is true |
+| `Source/Tools/Editor${Name}LevelComponent.h` | Only when `include_editor` is true |
+| `Source/Tools/Editor${Name}LevelComponent.cpp` | Only when `include_editor` is true |
 
-The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus wiring is removed from remaining files.
+The interface header carries `cleanup_hint: "interface"` -- if not requested, all EBus wiring is removed from remaining files.
+The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include` lines are stripped from siblings.
 
 **Input variables:**
 
 | Var Name | Type | Default | show_if | Description |
 |---|---|---|---|---|
-| `skip_interface` | toggle | false | -- | Omit `${Name}Interface.h` and all EBus wiring |
+| `add_bus_interface` | toggle | `true` | -- | Create the Interface Bus header file |
+| `include_editor` | toggle | `false` | `hasEditor` | Generate an EditorComponent wrapper that appears in the Editor Inspector and exports the runtime component at game-mode; only shown when the gem has an Editor module |
 
 **Commands:**
 
 | Command | Condition | Description |
 |---|---|---|
-| `register_file_list` | Always | Adds `.h` / `.cpp` to CMake |
-| `register_module_descriptor` | Always | Registers component in runtime module |
-| `register_interface_header` | `!skip_interface` | Registers interface header in API/INTERFACE target |
+| `register_file_list` | Always | Adds runtime `.h`/`.cpp` to CMake |
+| `register_module_descriptor` | Always | Registers the component in the runtime module |
+| `register_interface_header` | `add_bus_interface` | Registers the interface header in the API/INTERFACE target |
+| `register_file_list` | `include_editor` | Adds editor `.h`/`.cpp` to CMake |
+| `register_module_descriptor` (`module_kind: "editor"`) | `include_editor` | Registers the EditorComponent in the editor module |
+| `replace_text` | `include_editor` | Strips the `"Level"` add-component-menu category from the runtime `.cpp` so only the EditorComponent appears in the editor's Add Component menu |
+
+**Notable features:** Same optional-interface / optional-editor-adapter shape as Basic Component, but with the `LevelComponent` suffix baked into every generated file and CMake/module entry.
 
 
 ## Full Template JSON
@@ -45,8 +54,8 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
     "origin_url": "https://github.com/o3de/o3de",
     "license": "Apache-2.0 or MIT",
     "license_url": "https://github.com/o3de/o3de/blob/development/LICENSE.txt",
-    "display_name": "Level Component Template",
-    "summary": "A component template for a level-scoped component.",
+    "display_name": "Default Level Component Template",
+    "summary": "A component template for a level game component.",
     "canonical_tags": [
         "Template"
     ],
@@ -56,11 +65,11 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
     "icon_path": "preview.png",
     "copyFiles": [
         {
-            "file": "Source/${Name}Component.cpp",
+            "file": "Source/${Name}LevelComponent.cpp",
             "isTemplated": true
         },
         {
-            "file": "Source/${Name}Component.h",
+            "file": "Source/${Name}LevelComponent.h",
             "isTemplated": true
         },
         {
@@ -68,7 +77,21 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
             "isTemplated": true,
             "isInterface": true,
             "cleanup_hint": "interface",
-            "condition": "!skip_interface"
+            "condition": "add_bus_interface"
+        },
+        {
+            "file": "Source/Tools/Editor${Name}LevelComponent.h",
+            "isTemplated": true,
+            "isEditor": true,
+            "cleanup_hint": "editor",
+            "condition": "include_editor"
+        },
+        {
+            "file": "Source/Tools/Editor${Name}LevelComponent.cpp",
+            "isTemplated": true,
+            "isEditor": true,
+            "cleanup_hint": "editor",
+            "condition": "include_editor"
         }
     ],
     "createDirectories": [
@@ -82,16 +105,24 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
     "class_wizard": {
         "display_name": "Level Component",
         "class_name": "level_component",
-        "description": "A component that attaches to the level entity. Activates on level load and deactivates on level unload.",
-        "component_suffix": "Component",
+        "description": "A component for level-specific functionality",
+        "component_suffix": "LevelComponent",
 
         "input_vars": [
             {
                 "input_type": "toggle",
-                "var_name": "skip_interface",
-                "title": "Skip Interface",
+                "var_name": "add_bus_interface",
+                "title": "Add Bus Interface",
+                "default_value": true,
+                "description": "Create the Interface Bus header file"
+            },
+            {
+                "input_type": "toggle",
+                "var_name": "include_editor",
+                "title": "Add Editor Comp.",
                 "default_value": false,
-                "description": "Do not create the Interface.h file"
+                "description": "Generate an EditorComponent wrapper that appears in the Editor Inspector and exports the runtime component at game-mode",
+                "show_if": "hasEditor"
             }
         ],
 
@@ -106,8 +137,27 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
             },
             {
                 "command": "register_interface_header",
-                "condition": "!skip_interface",
+                "condition": "add_bus_interface",
                 "args": { "component_name": "${Name}" }
+            },
+            {
+                "command": "register_file_list",
+                "condition": "include_editor",
+                "args": { "component_name": "Editor${Name}${ComponentSuffix}" }
+            },
+            {
+                "command": "register_module_descriptor",
+                "condition": "include_editor",
+                "args": { "component_name": "Editor${Name}${ComponentSuffix}", "module_kind": "editor" }
+            },
+            {
+                "command": "replace_text",
+                "condition": "include_editor",
+                "args": {
+                    "component_name": "${Name}${ComponentSuffix}.cpp",
+                    "text_to_replace": "AppearsInAddComponentMenu, AZ_CRC_CE(\"Level\"))",
+                    "replacement": "AppearsInAddComponentMenu, AZ_CRC_CE(\"\"))"
+                }
             }
         ]
     }

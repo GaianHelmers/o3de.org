@@ -52,7 +52,7 @@ python ClassWizard.py --engine-path D:\O3DE --project-path D:\MyProject --templa
 `--template-help` output includes:
 
 - Template identity (class name, suffix, description)
-- **The full runnable command** with every required and optional flag shown
+- **The full runnable command** with the global/CLI-mode flags and all of the template's own flags shown (`--target-path` is a valid CLI-mode flag but is not printed in this block -- see [CLI Mode Flags](#cli-mode-flags))
 - Per-argument details: default values, required status, `show_if` condition
 - The complete list of processing commands that will run and their conditions
 
@@ -84,8 +84,16 @@ Each template adds its own flags from `input_vars`. These are printed by `--temp
 
 **Dropdown** inputs become `--flag-name <choice>` with a fixed set of allowed values.
 
+**Int** and **float** inputs become `--flag-name <number>`.
+
 Flag names are derived from `var_name` with underscores replaced by hyphens:
-`skip_interface` -> `--skip-interface`
+`add_bus_interface` -> `--add-bus-interface`
+
+A toggle flag is a plain "turn on" switch (`store_true`). If the template's `default_value` for that
+toggle is already `true` (as with `add_bus_interface` on every component template), there is no CLI
+flag to turn it back off -- passing `--add-bus-interface` is a no-op, and there is currently no
+`--no-add-bus-interface` equivalent. Toggles that default to `false` (like `include_editor`) work as
+expected: omit the flag to leave it off, pass it to turn it on.
 
 Flags marked `show_if` are optional at the CLI level (the condition is simply false when omitted),
 but they are only shown in the Editor GUI when the gem satisfies the condition.
@@ -155,19 +163,20 @@ python ClassWizard.py \
   --include-editor
 ```
 
-### Basic Component -- Skip Interface, Keep Comments
+### LyShine Component -- Keep Comments
 
 ```
 python ClassWizard.py \
   --engine-path  D:\O3DE \
   --project-path D:\MyProject \
-  --template     default_component \
-  --component-name PlayerHealth \
+  --template     lyshine_component \
+  --component-name HealthBar \
   --namespace      GS_Core \
   --automatic-register \
-  --skip-interface \
   --keep-comments
 ```
+
+`add_bus_interface` defaults to `true` on every component template and has no CLI flag to disable it (see [Template-Specific Flags](#template-specific-flags)), so there is no CLI-only way to omit the interface header -- use the GUI to turn it off.
 
 ### System Component
 
@@ -192,8 +201,10 @@ python ClassWizard.py \
   --namespace      GS_Quests \
   --automatic-register \
   --file-extension questdata \
-  --asset-group Other
+  --asset-group Quests
 ```
+
+`--asset-group` takes free text (default `DataAssets`), not a fixed set of choices -- any asset browser group name is valid.
 
 ### Custom Destination Path
 
@@ -215,4 +226,5 @@ python ClassWizard.py \
 | Code | Meaning |
 |---|---|
 | `0` | Success |
-| `1` | Argument error, validation failure, or component creation failure |
+| `1` | Validation failure (invalid component name/namespace, missing `--project-path` in CLI mode, missing destination directory) or component creation failure |
+| `2` | Argument parsing error from argparse itself -- missing `--engine-path`, an invalid `--template` choice, or a bad value for a typed flag (e.g. non-numeric `--width`) |

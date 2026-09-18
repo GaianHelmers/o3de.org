@@ -81,7 +81,7 @@ Adds a `CreateDescriptor()` call to the gem's module file so the component is in
 | `component_name` | string | Full component class name |
 | `module_kind` | string | `"runtime"` (default) or `"editor"` -- selects `{Namespace}Module.cpp` or `{Namespace}EditorModule.cpp` |
 
-**Behavior:** Adds `#include "Source/{component_name}.h"` and inserts `{component_name}::CreateDescriptor()` into the `m_descriptors.insert(...)` block.
+**Behavior:** Adds `#include "{component_name}.h"` and inserts `{component_name}::CreateDescriptor()` into the `m_descriptors.insert(...)` block.
 
 ---
 
@@ -204,11 +204,92 @@ Performs find-and-replace on a generated source file. Useful for injecting varia
 
 ---
 
-#### generate_uuid
+#### copy_file_to
 
-Generates and assigns UUIDs to template variables.
+General-purpose "copy one staged file to any destination" command. Intended as the single primitive that replaces the older `copy_file` / `copy_setreg` / `copy_asset_files` / `copy_variant_files` family in new templates -- those commands remain registered for templates already using them.
 
-**Behavior:** Creates fresh UUIDs for use in `AZ_COMPONENT_IMPL` and other O3DE macros that require unique identifiers.
+| Arg | Type | Description |
+|---|---|---|
+| `source` | string | Path inside the live staging directory |
+| `destination` | string | Path under the resolved `anchor` |
+| `anchor` | string | `dest_root` (default), `gem_root`, `gem_assets`, `gem_registry`, or `engine_root` |
+| `is_templated` | bool | Apply `${variable}` substitution to file contents (default `true`) |
+| `skip_existing` | bool | Don't overwrite an existing destination file (default `true`) |
+| `create_dirs` | bool | Create missing destination directories (default `true`) |
+
+**Behavior:** Copies a single file from the staging directory to a destination resolved against one of five named anchors -- the build target's source tree (`dest_root`), the gem root, `<gem>/Assets/`, `<gem>/Registry/`, or the engine root.
+
+---
+
+#### copy_glob_to
+
+Glob-based companion to `copy_file_to` -- copies every staged file matching a pattern into a destination directory, preserving relative structure.
+
+| Arg | Type | Description |
+|---|---|---|
+| `source_glob` | string | Glob pattern relative to the staging directory (supports `**`) |
+| `dest_anchor` | string | Same anchor set as `copy_file_to` (default `dest_root`) |
+| `dest_subdir` | string | Path under the anchor that becomes the new root of the matched tree |
+| `strip_prefix` | string | Path prefix to strip from each matched file's relative path before joining onto `dest_subdir` |
+| `is_templated` / `skip_existing` / `create_dirs` | bool | Same as `copy_file_to` |
+
+**Behavior:** Use this when an entire subtree of staged files shares one destination anchor and subdirectory. For one-off copies use `copy_file_to` directly.
+
+---
+
+#### copy_asset_files
+
+Copies a template's asset subtree (shaders, `.pass`, `.azasset`, materials, textures) directly into `<gem>/Assets/`, bypassing the normal `o3de create-from-template` staging path.
+
+| Arg | Type | Description |
+|---|---|---|
+| `source_subdir` | string | Folder under the template root to walk (default `TemplateAssets`) |
+| `dest_subdir` | string | Folder under the gem root to write into (default `Assets`) |
+| `is_templated` | bool | Apply `${variable}` substitution to file contents (default `true`) |
+| `skip_existing` | bool | Don't overwrite existing destination files (default `true`) |
+
+**Behavior:** Asset files belong at `<gem>/Assets/...`, not under the C++ build tree that normal staging writes to. This command reads directly from a sibling `TemplateAssets/` folder (never touched by staging) and copies it into the gem's `Assets/` tree, applying `${Name}`/`${GemName}` substitution to both paths and contents.
+
+---
+
+#### copy_variant_files
+
+Copies one of several parallel variant subtrees into the gem's source tree, selected by an input variable's value. Used when a template offers multiple integration modes that all target the same final file paths (see [Scoped Commands](../template-descriptor/#scoped-commands-advanced)).
+
+| Arg | Type | Description |
+|---|---|---|
+| `variant_var` | string | Name of the input variable naming the active variant (matched case-sensitively to a subdirectory) |
+| `variant_root` | string | Folder under the template root holding the variant subdirectories (default `Variants`) |
+| `dest_subdir` | string | Folder under the gem root to write into (default `""`, i.e. gem root) |
+| `is_templated` / `skip_existing` | bool | Same as `copy_file_to` |
+
+**Behavior:** Reads the variant variable's value, copies only the matching `<template>/Variants/<value>/` subtree, and skips the others -- letting several mutually-exclusive file sets (e.g. different `RenderingSystemComponent` shapes) share the same destination paths.
+
+---
+
+#### add_pass_creator_call
+
+Wires a custom Atom RPI pass class into a gem's `RenderingSystemComponent` so Atom's `PassSystem` knows how to instantiate it from a `.pass` template.
+
+| Arg | Type | Description |
+|---|---|---|
+| `pass_name` | string | C++ class name of the pass |
+| `system_component_name` | string | Override for the system component class name (default `${GemName}RenderingSystemComponent`) |
+
+**Behavior:** Injects matching `AddPassCreator`/`RemovePassCreator` calls into `Activate()`/`Deactivate()`, adding the necessary `#include`s. Idempotent -- re-running with the same pass name is a no-op rather than duplicating the registration.
+
+---
+
+#### add_feature_processor_registration
+
+Wires an Atom RPI `FeatureProcessor` into a gem's `RenderingSystemComponent`. Mirrors `add_pass_creator_call` for the `FeatureProcessorFactory` API surface.
+
+| Arg | Type | Description |
+|---|---|---|
+| `feature_processor_name` | string | C++ class name of the FeatureProcessor |
+| `system_component_name` | string | Override for the system component class name (default `${GemName}RenderingSystemComponent`) |
+
+**Behavior:** Injects matching `RegisterFeatureProcessor`/`UnregisterFeatureProcessor` calls into `Activate()`/`Deactivate()`, adding the necessary `#include`s. Idempotent, same as `add_pass_creator_call`.
 
 ---
 
@@ -221,12 +302,17 @@ Generates and assigns UUIDs to template variables.
 | `register_system_component` | Registration | Adds to `GetRequiredSystemComponents()` |
 | `register_interface_header` | Registration | Registers interface header in API target |
 | `add_gem_dependency` | General | Adds gem dependency to CMake |
-| `copy_file` | General | Copies file within gem directory |
-| `copy_setreg` | General | Ensures Registry directory exists |
+| `copy_file` | General | Copies file within gem directory (legacy -- see `copy_file_to`) |
+| `copy_setreg` | General | Ensures Registry directory exists (legacy -- see `copy_file_to`) |
+| `copy_file_to` | General | Copies one staged file to any anchor-rooted destination |
+| `copy_glob_to` | General | Globs staged files into an anchor-rooted destination directory |
+| `copy_asset_files` | General | Copies a template's asset subtree into `<gem>/Assets/` |
+| `copy_variant_files` | General | Copies one variant subtree selected by an input variable |
 | `register_asset_setreg` | General | Configures Asset Processor for custom extension |
 | `register_generic_asset` | General | Registers GenericAssetHandler |
 | `replace_text` | General | Find-and-replace in generated files |
-| `generate_uuid` | General | Generates UUIDs for template variables |
+| `add_pass_creator_call` | General | Registers an Atom RPI pass with `PassSystemInterface` |
+| `add_feature_processor_registration` | General | Registers an Atom RPI FeatureProcessor |
 
 ---
 

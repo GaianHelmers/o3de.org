@@ -7,34 +7,44 @@ weight: 40
 
 **Template name:** `SystemComponent`
 **CLI:** `--template system_component`
-**Suffix:** `Component` -- produces `${Name}Component`
+**Suffix:** `SystemComponent` -- produces `${Name}SystemComponent`
 
-An engine-level system component that lives on the system entity. System components provide global services that run outside of entity context -- input managers, network systems, resource registries, and similar singletons. The component is automatically registered in `GetRequiredSystemComponents()` so it activates at engine startup.
+An engine-level system component that lives on the system entity. System components provide global services that run outside of entity context -- input managers, network systems, resource registries, and similar singletons. Optionally generates an EBus interface header and an EditorComponent wrapper, the same as Basic Component.
 
 **Files generated:**
 
 | File | Conditional |
 |---|---|
-| `Source/${Name}Component.cpp` | Always |
-| `Source/${Name}Component.h` | Always |
-| `Include/${GemName}/${Name}Interface.h` | Only when `skip_interface` is false |
+| `Source/${Name}SystemComponent.cpp` | Always |
+| `Source/${Name}SystemComponent.h` | Always |
+| `Include/${GemName}/${Name}Interface.h` | Only when `add_bus_interface` is true |
+| `Source/Tools/Editor${Name}SystemComponent.h` | Only when `include_editor` is true |
+| `Source/Tools/Editor${Name}SystemComponent.cpp` | Only when `include_editor` is true |
 
-The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus wiring is removed from remaining files.
+The interface header carries `cleanup_hint: "interface"` -- if not requested, all EBus wiring is removed from remaining files.
+The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include` lines are stripped from siblings.
 
 **Input variables:**
 
 | Var Name | Type | Default | show_if | Description |
 |---|---|---|---|---|
-| `skip_interface` | toggle | false | -- | Omit `${Name}Interface.h` and all EBus wiring |
+| `add_bus_interface` | toggle | `true` | -- | Create the Interface Bus header file |
+| `include_editor` | toggle | `false` | `hasEditor` | Generate an EditorComponent wrapper that appears in the Editor Inspector and exports the runtime component at game-mode; only shown when the gem has an Editor module |
 
 **Commands:**
 
 | Command | Condition | Description |
 |---|---|---|
-| `register_file_list` | Always | Adds `.h` / `.cpp` to CMake |
-| `register_module_descriptor` | Always | Registers component in runtime module |
-| `register_system_component` | Always | Adds to `GetRequiredSystemComponents()` for auto-activation |
-| `register_interface_header` | `!skip_interface` | Registers interface header in API/INTERFACE target |
+| `register_file_list` | Always | Adds runtime `.h`/`.cpp` to CMake |
+| `register_module_descriptor` | Always | Registers the component in the runtime module |
+| `register_system_component` (`module_kind: "runtime"`) | Always | Adds to `GetRequiredSystemComponents()` in the runtime module |
+| `register_system_component` (`module_kind: "editor"`) | Always | Adds to `GetRequiredSystemComponents()` in the editor module |
+| `register_interface_header` | `add_bus_interface` | Registers the interface header in the API/INTERFACE target |
+| `register_file_list` | `include_editor` | Adds editor `.h`/`.cpp` to CMake |
+| `register_module_descriptor` (`module_kind: "editor"`) | `include_editor` | Registers the EditorComponent in the editor module |
+| `replace_text` | `include_editor` | Strips the `"Game"` add-component-menu category from the runtime `.cpp` so only the EditorComponent appears in the editor's Add Component menu |
+
+**Notable features:** The only template that registers `register_system_component` twice, unconditionally -- the system component is added to `GetRequiredSystemComponents()` in *both* the runtime and editor modules regardless of whether `include_editor` generates a separate EditorComponent file. This is distinct from Data Asset, which duplicates `register_system_component` for the same reason but on a dedicated `DataAssetSystemComponent` rather than the primary generated class.
 
 
 ## Full Template JSON
@@ -46,8 +56,8 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
     "origin_url": "https://github.com/o3de/o3de",
     "license": "Apache-2.0 or MIT",
     "license_url": "https://github.com/o3de/o3de/blob/development/LICENSE.txt",
-    "display_name": "System Component Template",
-    "summary": "A component template for a global system component on the system entity.",
+    "display_name": "Default System Component Template",
+    "summary": "A component template for a typical system component.",
     "canonical_tags": [
         "Template"
     ],
@@ -57,11 +67,11 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
     "icon_path": "preview.png",
     "copyFiles": [
         {
-            "file": "Source/${Name}Component.cpp",
+            "file": "Source/${Name}SystemComponent.cpp",
             "isTemplated": true
         },
         {
-            "file": "Source/${Name}Component.h",
+            "file": "Source/${Name}SystemComponent.h",
             "isTemplated": true
         },
         {
@@ -69,7 +79,21 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
             "isTemplated": true,
             "isInterface": true,
             "cleanup_hint": "interface",
-            "condition": "!skip_interface"
+            "condition": "add_bus_interface"
+        },
+        {
+            "file": "Source/Tools/Editor${Name}SystemComponent.h",
+            "isTemplated": true,
+            "isEditor": true,
+            "cleanup_hint": "editor",
+            "condition": "include_editor"
+        },
+        {
+            "file": "Source/Tools/Editor${Name}SystemComponent.cpp",
+            "isTemplated": true,
+            "isEditor": true,
+            "cleanup_hint": "editor",
+            "condition": "include_editor"
         }
     ],
     "createDirectories": [
@@ -83,16 +107,24 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
     "class_wizard": {
         "display_name": "System Component",
         "class_name": "system_component",
-        "description": "A global system component that lives on the system entity and activates automatically at engine startup.",
-        "component_suffix": "Component",
+        "description": "A system component registered in both runtime and editor modules",
+        "component_suffix": "SystemComponent",
 
         "input_vars": [
             {
                 "input_type": "toggle",
-                "var_name": "skip_interface",
-                "title": "Skip Interface",
+                "var_name": "add_bus_interface",
+                "title": "Add Bus Interface",
+                "default_value": true,
+                "description": "Create the Interface Bus header file"
+            },
+            {
+                "input_type": "toggle",
+                "var_name": "include_editor",
+                "title": "Add Editor Comp.",
                 "default_value": false,
-                "description": "Do not create the Interface.h file"
+                "description": "Generate an EditorComponent wrapper that appears in the Editor Inspector and exports the runtime component at game-mode",
+                "show_if": "hasEditor"
             }
         ],
 
@@ -110,9 +142,32 @@ The interface header carries `cleanup_hint: "interface"` -- if skipped, all EBus
                 "args": { "component_name": "${Name}${ComponentSuffix}", "module_kind": "runtime" }
             },
             {
+                "command": "register_system_component",
+                "args": { "component_name": "${Name}${ComponentSuffix}", "module_kind": "editor" }
+            },
+            {
                 "command": "register_interface_header",
-                "condition": "!skip_interface",
+                "condition": "add_bus_interface",
                 "args": { "component_name": "${Name}" }
+            },
+            {
+                "command": "register_file_list",
+                "condition": "include_editor",
+                "args": { "component_name": "Editor${Name}${ComponentSuffix}" }
+            },
+            {
+                "command": "register_module_descriptor",
+                "condition": "include_editor",
+                "args": { "component_name": "Editor${Name}${ComponentSuffix}", "module_kind": "editor" }
+            },
+            {
+                "command": "replace_text",
+                "condition": "include_editor",
+                "args": {
+                    "component_name": "${Name}${ComponentSuffix}.cpp",
+                    "text_to_replace": "AppearsInAddComponentMenu, AZ_CRC_CE(\"Game\"))",
+                    "replacement": "AppearsInAddComponentMenu, AZ_CRC_CE(\"\"))"
+                }
             }
         ]
     }

@@ -111,10 +111,13 @@ Every command receives a `CommandContext` with these fields:
 | `dest_root` | `Path` | Root directory of the target gem (e.g. `D:\Project\Gem`) |
 | `namespace` | `str` | Gem namespace / name (e.g. `"GS_Interaction"`) |
 | `component_name` | `str` | Name of the component being created |
-| `build_target` | `CMakeTarget` | The selected CMake build target (has `name`, `cmake_path`, `files_cmake_list`) |
+| `build_target` | `CMakeTarget` | The selected CMake build target -- has `name`, `raw_name`, `kind`, `file` (the `Path` to its `CMakeLists.txt`), and `files_cmake_list` |
 | `variables` | `dict` | All resolved variables -- base vars (`Name`, `GemName`, `ComponentSuffix`) plus user input values |
 | `logger` | `callable` | Logging function -- call `ctx.logger("message")` |
 | `engine_path` | `Path` | Path to the O3DE engine root |
+| `copy_files` | `list` | `(resolved_path, CopyFileDef)` pairs for every condition-passing file from `copyFiles`. Commands that need a generated file's actual path (rather than assuming `Source/`) read this. |
+| `template_path` | `Path` or `None` | Path to the source template directory (containing `template.json` and `Template/`). Used by commands that read template-side files outside the normal staging pipeline, e.g. `copy_asset_files`. |
+| `stage_dir` | `Path` or `None` | Path to the live staging directory, valid only during the `process_commands` phase. Files marked `excludeFromMerge: true` are still present here. `copy_file_to` and `copy_glob_to` read from this. |
 
 ---
 
@@ -205,7 +208,7 @@ Commands can be gated by a `condition` in the template JSON:
 ```json
 {
     "command": "register_interface_header",
-    "condition": "!skip_interface",
+    "condition": "add_bus_interface",
     "args": { "component_name": "${Name}" }
 }
 ```
@@ -230,6 +233,7 @@ Condition syntax:
 - **Use `CMakeAnalyzer`** if you need to parse or modify CMake files. It's available from `command_plugin`:
   ```python
   from command_plugin import CMakeAnalyzer
-  targets = CMakeAnalyzer.scan_gem_targets(ctx.dest_root)
+  targets = CMakeAnalyzer.scan_targets(ctx.build_target.file.parent, ctx.namespace)
   ```
+  `scan_targets(gem_path, gem_name)` takes the directory to search and the gem name used to resolve `${GemName}`-style tokens in target names -- it returns a `List[CMakeTarget]`, not a single target.
 - **Test with CLI first.** Run with `--automatic-register` and check the output before using the GUI.

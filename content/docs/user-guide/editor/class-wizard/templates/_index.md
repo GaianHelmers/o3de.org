@@ -67,11 +67,11 @@ See the [Template Descriptor Format](../template-descriptor/) for the full JSON 
 | Display Name | CLI `--template` Value | Source | Suffix | Key Features |
 |---|---|---|---|---|
 | [Basic Component](basic-component/) | `default_component` | Engine | `Component` | Optional interface, optional editor adapter |
-| [Level Component](level-component/) | `level_component` | Engine | `Component` | Level entity attachment |
-| [System Component](system-component/) | `system_component` | Engine | `Component` | System entity, auto-activation |
-| [LyShine Component](lyshine-component/) | `lyshine_component` | Engine | `Component` | UI canvas integration |
-| [Data Asset](data-asset/) | `data_asset` | Engine | `Asset` | Asset handler, `.setreg` config, custom extension |
-| [Attimage](attimage/) | `attimage` | Engine | `Attimage` | Attachment image for rendering |
+| [Level Component](level-component/) | `level_component` | Engine | `LevelComponent` | Level entity attachment, optional interface/editor adapter |
+| [System Component](system-component/) | `system_component` | Engine | `SystemComponent` | System entity, registered in both runtime and editor modules |
+| [LyShine Component](lyshine-component/) | `lyshine_component` | Engine | `Component` | UI canvas integration, `Gem::LyShine` dependency |
+| [Data Asset](data-asset/) | `data_asset` | Engine | `Asset` | `GenericAssetHandler` registration, dedicated system component |
+| [Attimage](attimage/) | `attimage` | Engine | *(none)* | Attachment image data file, no CMake/module registration |
 
 ---
 

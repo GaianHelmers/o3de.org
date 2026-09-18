@@ -22,7 +22,7 @@ Every Class Creation Wizard template is defined by a `template.json` file placed
     "copyFiles": [
         { "file": "Source/${Name}MyType.cpp", "isTemplated": true },
         { "file": "Source/${Name}MyType.h", "isTemplated": true },
-        { "file": "Include/${GemName}/${Name}Interface.h", "isTemplated": true, "condition": "!skip_interface" }
+        { "file": "Include/${GemName}/${Name}Interface.h", "isTemplated": true, "condition": "!include_extra_file" }
     ],
 
     "createDirectories": [
@@ -65,7 +65,7 @@ These fields are standard O3DE template metadata. The wizard uses some of them d
 Each entry in `copyFiles` defines a file to generate:
 
 ```json
-{ "file": "Source/${Name}MyType.cpp", "isTemplated": true, "condition": "!skip_interface" }
+{ "file": "Source/${Name}MyType.cpp", "isTemplated": true, "condition": "!include_extra_file" }
 ```
 
 | Field | Type | Default | Description |
@@ -73,6 +73,9 @@ Each entry in `copyFiles` defines a file to generate:
 | `file` | string | -- | Path relative to gem root. Supports `${variable}` substitution in the path. |
 | `isTemplated` | boolean | `true` | If `true`, O3DE processes `${variable}` tokens inside the file content. |
 | `isInterface` | boolean | `false` | Marks the file as an EBus interface header. When true, `cleanup_hint` defaults to `"interface"`. |
+| `isEditor` | boolean | `false` | Marks the file as belonging to the editor module CMake target. `register_file_list` reads this to decide whether to register the file against the runtime or editor build target. |
+| `isTest` | boolean | `false` | Marks the file as belonging to the test CMake target. |
+| `excludeFromMerge` | boolean | `false` | If `true`, the file is staged (so `${variable}` substitution still runs) but is not bulk-merged into the gem's source tree. A `process_commands` entry -- typically `copy_file_to` -- is expected to pick it up from the staging directory and write it to a non-default destination. |
 | `condition` | string | -- | If set, the file is only created when the condition evaluates to true. See [Conditions](#conditions). |
 | `cleanup_hint` | string | -- | Controls reference scrubbing when the file is excluded by a false condition. See [Cleanup Hints](#cleanup-hints). |
 
@@ -96,7 +99,7 @@ When `isInterface` is `true` and `cleanup_hint` is not set, the wizard defaults 
     "isTemplated": true,
     "isInterface": true,
     "cleanup_hint": "interface",
-    "condition": "!skip_interface"
+    "condition": "!include_extra_file"
 }
 ```
 
@@ -136,10 +139,10 @@ Defines user-facing input fields. Each variable becomes a GUI widget and a CLI f
 "input_vars": [
     {
         "input_type": "toggle",
-        "var_name": "skip_interface",
-        "title": "Skip Interface",
-        "default_value": false,
-        "description": "Do not create the Interface.h file"
+        "var_name": "add_bus_interface",
+        "title": "Add Bus Interface",
+        "default_value": true,
+        "description": "Create the Interface Bus header file"
     },
     {
         "input_type": "text",
@@ -156,6 +159,14 @@ Defines user-facing input fields. Each variable becomes a GUI widget and a CLI f
         "default_value": "Other",
         "options": ["Other", "Texture", "Animation", "Audio"],
         "description": "Asset browser category"
+    },
+    {
+        "input_type": "int",
+        "var_name": "width",
+        "title": "Width",
+        "default_value": 1920,
+        "min_value": 1,
+        "description": "Width in pixels"
     }
 ]
 ```
@@ -163,13 +174,14 @@ Defines user-facing input fields. Each variable becomes a GUI widget and a CLI f
 | Field | Required | Description |
 |---|---|---|
 | `var_name` | Yes | Variable name. Referenced as `${var_name}` in args and conditions. Becomes `--var-name` on the CLI (underscores to hyphens). |
-| `input_type` | Yes | One of `"toggle"`, `"text"`, or `"dropdown"`. |
+| `input_type` | Yes | One of `"toggle"`, `"text"`, `"dropdown"`, `"int"`, or `"float"`. |
 | `title` | Yes | Label shown in the GUI. |
 | `default_value` | No | Default value. Toggles default to `false`, text to `""`. |
 | `description` | No | Help text shown in GUI tooltips and `--template-help`. |
 | `required` | No | If `true`, the field must be filled. Only meaningful for `text` inputs. |
 | `options` | No | Array of choices. Only used with `"dropdown"` type. |
 | `show_if` | No | Project condition key. If set, the input only appears when the selected gem satisfies this condition. |
+| `min_value` / `max_value` | No | Numeric range bounds. Only used with `"int"`/`"float"` types; clamps the GUI spin box and is otherwise unenforced. |
 
 ### Input Types
 
@@ -178,6 +190,10 @@ Defines user-facing input fields. Each variable becomes a GUI widget and a CLI f
 | `toggle` | Checkbox | `--var-name` (store_true) | `true` / `false` |
 | `text` | Text field | `--var-name VALUE` | String |
 | `dropdown` | Combo box | `--var-name VALUE` (choices) | Selected string |
+| `int` | Spin box | `--var-name VALUE` (integer) | Integer |
+| `float` | Double spin box | `--var-name VALUE` (float) | Floating-point |
+
+A `toggle` input's CLI flag is a plain `store_true` action -- it can only turn the value *on*. If `default_value` is already `true` (as with `add_bus_interface` on the component templates), there is no CLI flag to turn it back off; that variable can currently only be set to `false` from the GUI.
 
 ### Project Conditions (show_if)
 
@@ -218,7 +234,7 @@ An ordered array of commands to execute after files are generated and merged int
     {
         "command": "register_module_descriptor",
         "args": { "component_name": "${Name}${ComponentSuffix}", "module_kind": "runtime" },
-        "condition": "!skip_interface"
+        "condition": "!include_extra_file"
     },
     {
         "command": "add_gem_dependency",
@@ -235,6 +251,40 @@ An ordered array of commands to execute after files are generated and merged int
 
 Commands execute in order. Registration commands (those with `is_registration_command = True`) only run when `--automatic-register` is enabled. All other commands always run.
 
+### Scoped Commands (Advanced)
+
+`process_commands` entries can also be a **scope block** instead of a single command, letting a template dispatch to different command lists based on a variable's value. This is optional -- a template with no scope blocks behaves exactly as described above.
+
+```json
+"process_commands": [
+    {
+        "scope": "${integration_mode}",
+        "branches": {
+            "PostVolume": [
+                { "command": "copy_variant_files", "args": { "variant_var": "integration_mode" } }
+            ],
+            "ScreenSpaceConstant": [
+                { "command": "copy_variant_files", "args": { "variant_var": "integration_mode" } },
+                { "command": "add_feature_processor_registration", "args": { "feature_processor_name": "${Name}FeatureProcessor" } }
+            ]
+        },
+        "default": [
+            { "command": "copy_variant_files", "args": { "variant_var": "integration_mode" } }
+        ],
+        "condition": "!skip_variant"
+    }
+]
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `scope` | Yes | A `${variable}` reference resolved at generation time. Its resolved value is matched against the keys in `branches`. |
+| `branches` | Yes | Object mapping a possible resolved value of `scope` to a list of command entries. Only the matching branch's commands are inlined; commands in other branches do not run. |
+| `default` | No | Command list used when the resolved `scope` value matches none of the `branches` keys. |
+| `condition` | No | If set, the entire scope block (all branches) is skipped when false. |
+
+Branches may themselves contain nested scope blocks. This is used by templates that offer multiple integration modes with different follow-up command lists per mode (see `copy_variant_files` in the [Command Reference](../commands/)).
+
 ---
 
 ## Variables
@@ -243,12 +293,15 @@ Variables are substituted in file paths, file content (when `isTemplated` is tru
 
 ### Built-in Variables
 
+The wizard's own `VariableResolver` seeds exactly three base variables for every generation:
+
 | Variable | Source | Example |
 |---|---|---|
 | `${Name}` | `--component-name` or GUI "Component Name" field | `PlayerHealth` |
 | `${GemName}` | Selected gem namespace | `GS_Interaction` |
 | `${ComponentSuffix}` | Template's `component_suffix` field | `Component` |
-| `${SanitizedCppName}` | O3DE-generated C++-safe version of `${Name}` | `PlayerHealth` |
+
+`${SanitizedCppName}` and other O3DE template variables come from the underlying `o3de create-from-template` staging step, not from the wizard's own resolver -- they follow O3DE's general template variable rules, separate from the three above.
 
 ### User Variables
 

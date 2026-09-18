@@ -35,13 +35,13 @@ The `WizardTemplateScanner` scans for `template.json` files under a `Templates/`
 | 2 | Project | `<project_path>/Templates/*/template.json` |
 | 3 | Gems | `<gem_path>/Templates/*/template.json` |
 
-Gem paths are resolved via the O3DE manifest API (`manifest.get_project_enabled_gems()`, `manifest.get_manifest_external_subdirectories()`, `manifest.get_project_external_subdirectories()`).
+Gem paths are resolved via the O3DE manifest API's `manifest.get_project_enabled_gems()`. If the manifest API is unavailable, the wizard falls back to manually parsing the project's `project.json` and the user's `o3de_manifest.json`.
 
 A `template.json` must contain a `"class_wizard"` block to be recognized. Templates without this block are ignored. Templates are deduplicated by resolved directory path and sorted alphabetically by display name.
 
 ### Command Discovery
 
-The `CommandPluginLoader` scans for Python files in `Tools/ClassCreationWizard/Commands/` under the same three locations. Each command file uses `@CommandRegistry.register()` to self-register. Commands are loaded via `importlib` with collision detection -- duplicate command names raise warnings and the first registration wins.
+The `CommandPluginLoader` scans for Python files in three locations, in priority order: the engine's `Tools/ClassCreationWizard/commands/` directory, then a flat `ClassWizardCommands/` directory under the project, then a `ClassWizardCommands/` directory under each gem (alphabetical by gem name). Each command file uses `@CommandRegistry.register()` to self-register. Commands are loaded via `importlib` with collision detection -- duplicate command names raise warnings and the first registration wins.
 
 ---
 
@@ -57,16 +57,17 @@ Opens the graphical interface. The wizard auto-detects your project if launched 
 
 ### Workflow
 
-1. **Template Selection.** The top combo box lists all discovered templates, grouped by source (Engine, Project, Gem).
+1. **Template Selection.** The top combo box lists all discovered templates. "Basic Component" is always pinned first; the rest are sorted alphabetically by display name.
 
 2. **Input Fields.** Dynamic fields are generated from each template's `input_vars` definition:
 
    | Input Type | GUI Widget |
    |---|---|
-   | `string` / `text` | QLineEdit text field |
-   | `gem_select` | BoundedComboBox populated from enabled gems |
-   | `combo` / `dropdown` | BoundedComboBox with static choices |
-   | `toggle` / `bool` | QCheckBox |
+   | `text` | QLineEdit text field |
+   | `dropdown` | BoundedComboBox with static choices |
+   | `toggle` | QCheckBox |
+   | `int` | QSpinBox |
+   | `float` | QDoubleSpinBox |
 
 3. **Create Button.** Validates all required fields, resolves variables, and runs the command pipeline.
 
@@ -75,7 +76,7 @@ Opens the graphical interface. The wizard auto-detects your project if launched 
 ### GUI Features
 
 - **Fusion theme** with custom QSS stylesheet and SVG arrow icons
-- **BoundedComboBox**: QComboBox subclass with MAX_POPUP_HEIGHT (300px), pre-constrains the popup view then resizes
+- **BoundedComboBox**: QComboBox subclass with MAX_POPUP_HEIGHT (400px), pre-constrains the popup view then resizes
 - **Project condition awareness**: Input fields with `show_if` conditions only appear when the selected gem satisfies the condition (e.g., `hasEditor` shows editor-related toggles only for gems with an Editor module)
 
 ---
@@ -90,7 +91,7 @@ The wizard ships with templates for the most common O3DE class types:
 | **[Level Component](templates/level-component/)** | A component that attaches to the level entity. |
 | **[System Component](templates/system-component/)** | An engine-level system component for services that run outside of entity context. |
 | **[LyShine Component](templates/lyshine-component/)** | A UI component for the LyShine (UI 2.0) system. |
-| **[Data Asset](templates/data-asset/)** | A custom data asset class with asset handler registration and `.setreg` configuration. |
+| **[Data Asset](templates/data-asset/)** | A custom data asset class with `GenericAssetHandler` registration and a dedicated system component. |
 | **[Attimage](templates/attimage/)** | An attachment image asset template for rendering features. |
 
 Each template can be extended or overridden by placing custom templates in your project or gem `Templates/` directories.
@@ -108,12 +109,15 @@ Templates define **input variables** -- toggles, text fields, and dropdowns -- t
 
 ### Built-in Variables
 
+The wizard's own resolver seeds exactly three base variables:
+
 | Variable | Source | Example |
 |---|---|---|
 | `${Name}` | `--component-name` or GUI "Component Name" field | `PlayerHealth` |
 | `${GemName}` | Selected gem namespace | `GS_Interaction` |
 | `${ComponentSuffix}` | Template's `component_suffix` field | `Component` |
-| `${SanitizedCppName}` | O3DE-generated C++-safe version of `${Name}` | `PlayerHealth` |
+
+`${SanitizedCppName}` and similar variables come from the underlying `o3de create-from-template` staging step, not from the wizard itself.
 
 ---
 
