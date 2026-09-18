@@ -1,165 +1,21 @@
 ---
 title: "Basic Component"
 linkTitle: "Basic Component"
-description: "Template for creating a standard O3DE game component."
+description: "Generate a standard O3DE game component."
 weight: 20
 ---
 
-**Template name:** `DefaultComponent`
-**CLI:** `--template default_component`
-**Suffix:** `Component` -- produces `${Name}Component`
+The standard, general-purpose O3DE game component. Use this for most gameplay components -- anything that attaches to a regular game entity.
 
-The standard O3DE game component. Optionally generates an EBus interface header and an EditorComponent wrapper for editor-side representation.
+{{< image-width src="/images/user-guide/editor/class-wizard/templates/basic-template-screen.png" width="450" alt="The wizard with Basic Component selected" >}}
 
-**Files generated:**
+**What you'll fill in:**
 
-| File | Conditional |
+| Field | What it does |
 |---|---|
-| `Source/${Name}Component.cpp` | Always |
-| `Source/${Name}Component.h` | Always |
-| `Include/${GemName}/${Name}Interface.h` | Only when `add_bus_interface` is true |
-| `Source/Tools/Editor${Name}Component.h` | Only when `include_editor` is true |
-| `Source/Tools/Editor${Name}Component.cpp` | Only when `include_editor` is true |
+| Add Bus Interface | On by default. Generates a companion EBus interface header so other components can talk to this one. Turn it off (in the GUI) if this component won't need to be called from elsewhere. |
+| Add Editor Comp. | Only shown if your gem has an Editor module. Generates an `EditorComponent` wrapper so this component shows up and can be edited in the Editor's Entity Inspector. |
 
-The interface header carries `cleanup_hint: "interface"` -- if not requested, all EBus wiring is removed from remaining files.
-The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include` lines are stripped from siblings.
+Fill in a **Component Name** and pick the **Gem** you're adding it to, then select **Create**.
 
-**Input variables:**
-
-| Var Name | Type | Default | show_if | Description |
-|---|---|---|---|---|
-| `add_bus_interface` | toggle | `true` | -- | Create the Interface Bus header file |
-| `include_editor` | toggle | `false` | `hasEditor` | Generate an EditorComponent wrapper that appears in the Editor Inspector and exports the runtime component at game-mode; only shown when gem has an Editor module |
-
-**Commands:**
-
-| Command | Condition | Description |
-|---|---|---|
-| `register_file_list` | Always | Adds runtime `.h` / `.cpp` to CMake |
-| `register_module_descriptor` | Always | Registers component in runtime module |
-| `register_interface_header` | `add_bus_interface` | Registers interface header in API/INTERFACE target |
-| `register_file_list` | `include_editor` | Adds editor `.h` / `.cpp` to CMake |
-| `register_module_descriptor` (`module_kind: "editor"`) | `include_editor` | Registers EditorComponent in editor module |
-| `replace_text` | `include_editor` | Strips `AppearsInAddComponentMenu` from runtime `.cpp` so only the EditorComponent appears in the editor menu |
-
-**Notable features:** Only template with both conditional interface cleanup and conditional editor adapter. The `include_editor` toggle is hidden on gems without an Editor module (`show_if: "hasEditor"`). Unlike most toggles, `add_bus_interface` defaults to `true` -- the interface header is generated unless explicitly turned off.
-
-
-## Full Template JSON
-
-```json
-{
-    "template_name": "DefaultComponent",
-    "origin": "Open 3D Engine - o3de.org",
-    "origin_url": "https://github.com/o3de/o3de",
-    "license": "Apache-2.0 or MIT",
-    "license_url": "https://github.com/o3de/o3de/blob/development/LICENSE.txt",
-    "display_name": "Default Component Template",
-    "summary": "A component template for a typical game component.",
-    "canonical_tags": [
-        "Template"
-    ],
-    "user_tags": [
-        "DefaultComponent"
-    ],
-    "icon_path": "preview.png",
-    "copyFiles": [
-        {
-            "file": "Source/${Name}Component.cpp",
-            "isTemplated": true
-        },
-        {
-            "file": "Source/${Name}Component.h",
-            "isTemplated": true
-        },
-        {
-            "file": "Include/${GemName}/${Name}Interface.h",
-            "isTemplated": true,
-            "isInterface": true,
-            "cleanup_hint": "interface",
-            "condition": "add_bus_interface"
-        },
-        {
-            "file": "Source/Tools/Editor${Name}Component.h",
-            "isTemplated": true,
-            "isEditor": true,
-            "cleanup_hint": "editor",
-            "condition": "include_editor"
-        },
-        {
-            "file": "Source/Tools/Editor${Name}Component.cpp",
-            "isTemplated": true,
-            "isEditor": true,
-            "cleanup_hint": "editor",
-            "condition": "include_editor"
-        }
-    ],
-    "createDirectories": [
-        {
-            "dir": "Include/${GemName}"
-        },
-        {
-            "dir": "Source"
-        }
-    ],
-    "class_wizard": {
-        "display_name": "Basic Component",
-        "class_name": "default_component",
-        "description": "A standard game component with optional interface header and optional editor adapter component.",
-        "component_suffix": "Component",
-
-        "input_vars": [
-            {
-                "input_type": "toggle",
-                "var_name": "add_bus_interface",
-                "title": "Add Bus Interface",
-                "default_value": true,
-                "description": "Create the Interface Bus header file"
-            },
-            {
-                "input_type": "toggle",
-                "var_name": "include_editor",
-                "title": "Add Editor Comp.",
-                "default_value": false,
-                "description": "Generate an EditorComponent wrapper that appears in the Editor Inspector and exports the runtime component at game-mode",
-                "show_if": "hasEditor"
-            }
-        ],
-
-        "process_commands": [
-            {
-                "command": "register_file_list",
-                "args": { "component_name": "${Name}${ComponentSuffix}" }
-            },
-            {
-                "command": "register_module_descriptor",
-                "args": { "component_name": "${Name}${ComponentSuffix}", "module_kind": "runtime" }
-            },
-            {
-                "command": "register_interface_header",
-                "condition": "add_bus_interface",
-                "args": { "component_name": "${Name}" }
-            },
-            {
-                "command": "register_file_list",
-                "condition": "include_editor",
-                "args": { "component_name": "Editor${Name}${ComponentSuffix}" }
-            },
-            {
-                "command": "register_module_descriptor",
-                "condition": "include_editor",
-                "args": { "component_name": "Editor${Name}${ComponentSuffix}", "module_kind": "editor" }
-            },
-            {
-                "command": "replace_text",
-                "condition": "include_editor",
-                "args": {
-                    "component_name": "${Name}${ComponentSuffix}.cpp",
-                    "text_to_replace": "AppearsInAddComponentMenu, AZ_CRC_CE(\"Game\"))",
-                    "replacement": "AppearsInAddComponentMenu, AZ_CRC_CE(\"\"))"
-                }
-            }
-        ]
-    }
-}
-```
+For the full generated file list, process commands, and `template.json` schema, see [Basic Component](/docs/engine-dev/tools/class-wizard/templates/basic-component/) in the Developer Guide.

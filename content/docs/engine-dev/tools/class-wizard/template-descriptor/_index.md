@@ -1,6 +1,6 @@
 ---
 title: "Template Descriptor Format"
-linkTitle: "Template Descriptor"
+linkTitle: "Template Descriptor Format"
 description: "Full reference for the template.json descriptor file used by the Class Creation Wizard."
 weight: 400
 ---
@@ -379,3 +379,9 @@ This template:
 2. Registers them in the gem's CMake file list
 3. Adds the component to the module descriptor and system component list
 4. Adds `Gem::GS_Cinematics.API` as a build dependency (skipped if the gem is GS_Cinematics itself)
+
+---
+
+## See It Applied
+
+Every built-in template implements this schema. See [Templates](templates/) for the field-by-field breakdown of each one -- Basic Component, Level Component, System Component, LyShine Component, Data Asset, and Attimage.
