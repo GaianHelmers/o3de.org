@@ -43,7 +43,7 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
 | `register_module_descriptor` (`module_kind: "editor"`) | `include_editor` | Registers the EditorComponent in the editor module |
 | `replace_text` | `include_editor` | Strips the `"UI"` add-component-menu category from the runtime `.cpp` so only the EditorComponent appears in the editor's Add Component menu |
 
-**Notable features:** The only template that adds a gem dependency (`Gem::LyShine`) as part of its standard flow -- otherwise it follows the same optional-interface / optional-editor-adapter shape as Basic Component.
+**Notable features:** The only template that adds a gem dependency (`Gem::LyShine`) as part of its standard flow. Otherwise, it follows the same optional-interface / optional-editor-adapter shape as Basic Component.
 
 
 ## Full Template JSON
@@ -171,4 +171,4 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
 
 ## Design Notes
 
-Same mechanic again, this time on `AZ_CRC_CE("UI")`: both the runtime and Editor files start out categorized for the UI menu, and turning on `include_editor` triggers the same runtime-only `replace_text` clear described on [Basic Component](../basic-component/), so the generated Editor variant is what actually appears to users.
+Same mechanic again, this time on `AZ_CRC_CE("UI")`. Both the runtime and Editor files start out categorized for the UI menu. Turning on `include_editor` triggers the same runtime-only `replace_text` clear described on [Basic Component](../basic-component/). The generated Editor variant is what actually appears to users.

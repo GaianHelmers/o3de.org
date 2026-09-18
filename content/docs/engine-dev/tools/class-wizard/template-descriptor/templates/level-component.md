@@ -9,7 +9,7 @@ weight: 30
 **CLI:** `--template level_component`
 **Suffix:** `LevelComponent` -- produces `${Name}LevelComponent`
 
-A component that attaches to the level entity rather than individual game entities. Level components are useful for per-level services like weather systems, lighting controllers, or level-wide game logic. Optionally generates an EBus interface header and an EditorComponent wrapper for editor-side representation, the same as Basic Component.
+A component that attaches to the level entity rather than individual game entities. Level components handle per-level services: weather systems, lighting controllers, or level-wide game logic. Optionally generates an EBus interface header and an EditorComponent wrapper for editor-side representation, the same as Basic Component.
 
 **Files generated:**
 
@@ -166,4 +166,4 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
 
 ## Design Notes
 
-Same mechanic as [Basic Component](../basic-component/): the runtime and Editor files both start out with `AppearsInAddComponentMenu(AZ_CRC_CE("Level"))` -- that's the necessary command for either one to appear in the Level Add Component menu. If you have an Editor component, it needs to be available in the menu instead of the base component, so turning on `include_editor` also runs the `replace_text` command (gated on the same toggle) that clears the runtime `.cpp`'s copy to `AZ_CRC_CE("")`. The Editor file's own copy is never touched, so it's the one that ends up visible in the Add Component menu.
+Same mechanic as [Basic Component](../basic-component/). The runtime and Editor files both start out with `AppearsInAddComponentMenu(AZ_CRC_CE("Level"))`, the command that makes either one appear in the Level Add Component menu. If you have an Editor component, it needs to be the one available in the menu, not the base component. Turning on `include_editor` also runs the `replace_text` command, gated on the same toggle, that clears the runtime `.cpp`'s copy to `AZ_CRC_CE("")`. The Editor file's own copy is never touched. It's the one that ends up visible in the Add Component menu.

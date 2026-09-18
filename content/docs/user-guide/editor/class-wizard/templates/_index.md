@@ -5,7 +5,7 @@ description: "Catalogue of the class types the Class Creation Wizard can generat
 weight: 300
 ---
 
-Each page below covers one template: what it creates, and the fields you'll fill in to generate it. For the full `template.json` schema, generated file lists, and process commands behind each template, see the [Templates reference](/docs/engine-dev/tools/class-wizard/templates/) in the Developer Guide.
+Each page below covers one template: what it creates, and the fields you'll fill in to generate it. For the full `template.json` schema, generated file lists, and process commands behind each template, see the [Templates reference](/docs/engine-dev/tools/class-wizard/template-descriptor/templates/) in the Developer Guide.
 
 | Template | What It Creates |
 |---|---|

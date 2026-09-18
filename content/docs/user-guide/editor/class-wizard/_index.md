@@ -5,23 +5,32 @@ description: "Generate new O3DE C++ classes -- components, system components, an
 weight: 450
 ---
 
-The **Class Creation Wizard** generates the boilerplate for a new O3DE C++ class -- source files, CMake registration, and module descriptor entries -- from a template you pick and a few fields you fill in.
+The **Class Creation Wizard** generates the boilerplate for a new O3DE C++ class: source files, CMake registration, and module descriptor entries.
+
+You pick a template and fill in the input fields. The wizard outputs the final files.
 
 {{< image-width src="/images/user-guide/editor/class-wizard/class-wizard-gui.png" width="500" alt="The Class Creation Wizard window" >}}
 
 New to the wizard? Start with [Getting Started](getting-started/) for a step-by-step walkthrough. Prefer the command line? See [CLI Quick Start](cli/).
 
+To author your own [templates](/docs/engine-dev/tools/class-wizard/template-descriptor/) and [commands](/docs/engine-dev/tools/class-wizard/commands/), or to review the wizard's architecture, see the [Class Creation Wizard Developer Guide](/docs/engine-dev/tools/class-wizard/).
+
 ## Launching
 
-From the O3DE Editor, select **File > New Component**. Or launch it standalone from your O3DE engine's `Tools/ClassCreationWizard/` directory:
+From the O3DE Editor, select **File > New Component**.
+
+{{< image-width src="/images/user-guide/editor/class-wizard/new-component-editor-button.png" width="450" alt="The New Component entry in the Editor's File menu" >}}
+
+Or launch it standalone from your O3DE engine's `Tools/ClassCreationWizard/` directory:
 
 ```bash
 python ClassWizard.py --engine-path "C:\o3de" --project-path "C:\MyProject"
 ```
 
-Both `--engine-path` and `--project-path` are required -- the wizard needs your project path to correctly resolve your build targets.
+Both `--engine-path` and `--project-path` are required. The wizard needs your project path to resolve your build targets correctly.
 
 ## Templates
+Follow the [Getting Started](getting-started/) guide for a step-by-step walkthrough to create the following components.
 
 | Template | What It Creates |
 |---|---|
@@ -34,8 +43,6 @@ Both `--engine-path` and `--project-path` are required -- the wizard needs your 
 
 Your project or gems may add their own templates too -- those show up in the same dropdown alongside these.
 
----
-
 ## Going Further
 
-This page covers using the wizard from the Editor. For the full command-line reference, the `template.json` schema, the command plugin system, and how to author your own templates and commands, see the [Class Creation Wizard Developer Guide](/docs/engine-dev/tools/class-wizard/).
+Follow [Getting Started](getting-started/) to use the GUI, or [CLI Quick Start](cli/) to use the wizard from the command line. To author your own templates and commands, or to understand the architecture of the system, see the [Class Creation Wizard Developer Guide](/docs/engine-dev/tools/class-wizard/).

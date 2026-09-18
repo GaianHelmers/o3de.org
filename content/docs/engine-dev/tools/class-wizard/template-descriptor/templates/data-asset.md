@@ -46,7 +46,7 @@ The interface header carries `cleanup_hint: "interface"` -- if not requested, al
 | `register_generic_asset` | Always | Registers a `GenericAssetHandler` for the asset in the system component |
 | `register_interface_header` | `add_bus_interface` | Registers the interface header in the API/INTERFACE target |
 
-**Notable features:** The only template that registers its system component in both the runtime and editor `GetRequiredSystemComponents()` lists unconditionally -- the asset handler needs to be available in both. There is no `.setreg`/Asset Processor configuration step; the file extension and asset group only drive the `GenericAssetHandler` registration in code.
+**Notable features:** The only template that registers its system component in both the runtime and editor `GetRequiredSystemComponents()` lists unconditionally, because the asset handler needs to be available in both. There is no `.setreg`/Asset Processor configuration step. The file extension and asset group only drive the `GenericAssetHandler` registration in code.
 
 
 ## Full Template JSON
@@ -178,4 +178,6 @@ Note: the JSON's `description` field ("Creates a custom data asset with setreg c
 
 ## Design Notes
 
-Data Asset has no `include_editor` toggle and no separate EditorComponent file -- its `${GemName}DataAssetSystemComponent` is registered into `GetRequiredSystemComponents()` in *both* the runtime and editor modules unconditionally (see [Architecture > Commands Are Additive, Not Destructive](/docs/engine-dev/tools/class-wizard/architecture/#commands-are-additive-not-destructive)). There's no `AppearsInAddComponentMenu` visibility conflict to resolve here the way there is on [Basic Component](../basic-component/) and its relatives, because a system component is never placed by hand from that menu in the first place -- it only needs to exist in whichever module is running. That's also why this is the only template that calls `register_system_component` twice against the *same* component name, rather than a runtime/Editor pair.
+Data Asset has no `include_editor` toggle and no separate EditorComponent file. Its `${GemName}DataAssetSystemComponent` is registered into `GetRequiredSystemComponents()` in *both* the runtime and editor modules, unconditionally. See [Architecture > Commands Are Additive, Not Destructive](/docs/engine-dev/tools/class-wizard/architecture/#commands-are-additive-not-destructive).
+
+Basic Component and its relatives resolve an `AppearsInAddComponentMenu` visibility conflict between a runtime component and its Editor variant. Data Asset has no such conflict to resolve. A system component is never placed by hand from that menu. It only needs to exist in whichever module is running. This is also why Data Asset is the only template that calls `register_system_component` twice against the *same* component name, rather than a runtime/Editor pair.

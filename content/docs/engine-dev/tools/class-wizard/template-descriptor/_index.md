@@ -5,9 +5,9 @@ description: "Full reference for the template.json descriptor file used by the C
 weight: 400
 ---
 
-Every Class Creation Wizard template is defined by a `template.json` file placed in a `Templates/<TemplateName>/` directory. This file combines standard O3DE template metadata with a `class_wizard` block that the wizard uses to drive code generation and project integration.
+Every **Class Creation Wizard** template is defined by a `template.json` file, placed in a `Templates/<TemplateName>/` directory. This file combines standard O3DE template metadata with a `class_wizard` block that the wizard uses to drive code generation and project integration.
 
-Read this page top to bottom and you'll go argument by argument: first through the standard O3DE fields ([`copyFiles`](#copyfiles), `createDirectories`) that the wizard extends rather than replaces, then into the wizard-only [`class_wizard` block](#the-class_wizard-block) -- where you'll find everything you need to actually author on top of it. Once you know this schema, see [Templates](templates/) for how every built-in template applies it.
+This page covers the schema field by field. First, the standard O3DE fields ([`copyFiles`](#copyfiles), `createDirectories`), which the wizard extends rather than replaces. Then the wizard-only [`class_wizard` block](#the-class_wizard-block), which documents every field required to author a template. After you know this schema, see [Templates](templates/) for how every built-in template applies it.
 
 ---
 
@@ -59,13 +59,13 @@ Read this page top to bottom and you'll go argument by argument: first through t
 }
 ```
 
-Each array here can hold as many entries as the template needs -- one `input_vars` entry per field you want to collect, one `process_commands` entry per step you want to run. The single entries shown are just illustrative; see [input_vars](#input_vars) and [process_commands](#process_commands) below for every field each one supports.
+Each array here can hold as many entries as the template needs: one `input_vars` entry per field you want to collect, one `process_commands` entry per step you want to run. The single entries shown are illustrative. See [input_vars](#input_vars) and [process_commands](#process_commands) below for every field each one supports.
 
 ---
 
 ## Top-Level Fields
 
-These fields are standard O3DE template metadata. The wizard uses some of them during file staging.
+These fields are standard O3DE template metadata. The wizard uses `copyFiles` and `createDirectories` during file staging.
 
 | Field | Required | Description |
 |---|---|---|
@@ -94,13 +94,13 @@ Each entry in `copyFiles` defines a file to generate:
 | `isInterface` | boolean | `false` | Marks the file as an EBus interface header. When true, `cleanup_hint` defaults to `"interface"`. |
 | `isEditor` | boolean | `false` | Marks the file as belonging to the editor module CMake target. `register_file_list` reads this to decide whether to register the file against the runtime or editor build target. |
 | `isTest` | boolean | `false` | Marks the file as belonging to the test CMake target. |
-| `excludeFromMerge` | boolean | `false` | If `true`, the file is staged (so `${variable}` substitution still runs) but is not bulk-merged into the gem's source tree. A `process_commands` entry -- typically `copy_file_to` -- is expected to pick it up from the staging directory and write it to a non-default destination. |
+| `excludeFromMerge` | boolean | `false` | If `true`, the file is staged (so `${variable}` substitution still runs) but is not bulk-merged into the gem's source tree. A `process_commands` entry reads the file from the staging directory and writes it to a non-default destination -- `copy_file_to` is the command built for this. |
 | `condition` | string | -- | If set, the file is only created when the condition evaluates to true. See [Conditions](#conditions). |
 | `cleanup_hint` | string | -- | Controls reference scrubbing when the file is excluded by a false condition. See [Cleanup Hints](#cleanup-hints). |
 
 ### Cleanup Hints
 
-When a conditional file is excluded (its `condition` is false), the wizard can scrub references to that file from the remaining generated files. The `cleanup_hint` field controls what kind of scrubbing is performed.
+When the wizard excludes a conditional file, because its `condition` is false, it can scrub references to that file from the remaining generated files. The `cleanup_hint` field controls the kind of scrubbing performed.
 
 | Value | What Gets Removed |
 |---|---|
@@ -212,7 +212,7 @@ Defines user-facing input fields. Each variable becomes a GUI widget and a CLI f
 | `int` | Spin box | `--var-name VALUE` (integer) | Integer |
 | `float` | Double spin box | `--var-name VALUE` (float) | Floating-point |
 
-A `toggle` input's CLI flag is a plain `store_true` action -- it can only turn the value *on*. If `default_value` is already `true` (as with `add_bus_interface` on the component templates), there is no CLI flag to turn it back off; that variable can currently only be set to `false` from the GUI.
+A `toggle` input's CLI flag is a plain `store_true` action. It can only turn the value *on*. If `default_value` is already `true`, as with `add_bus_interface` on the component templates, there is no CLI flag to turn it back off. That variable can currently only be set to `false` from the GUI.
 
 ### Project Conditions (show_if)
 
@@ -236,7 +236,7 @@ The `show_if` field lets input variables appear or disappear based on the struct
 }
 ```
 
-If the selected gem has no editor module, the toggle is hidden and the variable defaults to `false`.
+If the selected gem has no editor module, the wizard hides the toggle, and the variable defaults to `false`.
 
 ---
 
@@ -268,11 +268,11 @@ An ordered array of commands to execute after files are generated and merged int
 | `args` | Yes | Object of arguments passed to the command constructor. All string values support `${variable}` substitution. |
 | `condition` | No | If set, the command only runs when the condition is true. |
 
-Commands execute in order. Registration commands (those with `is_registration_command = True`) only run when `--automatic-register` is enabled. All other commands always run.
+Commands execute in order. Registration commands, those with `is_registration_command = True`, only run when `--automatic-register` is enabled. All other commands always run.
 
 ### Scoped Commands (Advanced)
 
-`process_commands` entries can also be a **scope block** instead of a single command, letting a template dispatch to different command lists based on a variable's value. This is optional -- a template with no scope blocks behaves exactly as described above.
+A `process_commands` entry can also be a **scope block** instead of a single command. This lets a template dispatch to different command lists based on a variable's value. Scope blocks are optional. A template with no scope blocks behaves exactly as described above.
 
 ```json
 "process_commands": [
@@ -302,7 +302,7 @@ Commands execute in order. Registration commands (those with `is_registration_co
 | `default` | No | Command list used when the resolved `scope` value matches none of the `branches` keys. |
 | `condition` | No | If set, the entire scope block (all branches) is skipped when false. |
 
-Branches may themselves contain nested scope blocks. This is used by templates that offer multiple integration modes with different follow-up command lists per mode (see `copy_variant_files` in the [Command Reference](../commands/)).
+Branches can contain nested scope blocks. Templates that offer multiple integration modes, each with a different follow-up command list, use this pattern. See `copy_variant_files` in the [Command Reference](../commands/).
 
 ---
 
@@ -320,7 +320,7 @@ The wizard's own `VariableResolver` seeds exactly three base variables for every
 | `${GemName}` | Selected gem namespace | `GS_Interaction` |
 | `${ComponentSuffix}` | Template's `component_suffix` field | `Component` |
 
-`${SanitizedCppName}` and other O3DE template variables come from the underlying `o3de create-from-template` staging step, not from the wizard's own resolver -- they follow O3DE's general template variable rules, separate from the three above.
+`${SanitizedCppName}` and other O3DE template variables come from the underlying `o3de create-from-template` staging step, not from the wizard's own resolver. They follow O3DE's general template variable rules, separate from the three above.
 
 ### User Variables
 
@@ -330,7 +330,7 @@ Any `var_name` defined in `input_vars` is available as `${var_name}`.
 
 ## Conditions
 
-Conditions gate file inclusion and command execution. They are evaluated against the resolved variable set.
+Conditions gate file inclusion and command execution. The wizard evaluates them against the resolved variable set.
 
 | Syntax | Meaning |
 |---|---|
@@ -346,7 +346,7 @@ Conditions gate file inclusion and command execution. They are evaluated against
 
 ## Complete Example
 
-[Data Asset](templates/data-asset/), a real built-in template, touches nearly every part of this schema:
+[Data Asset](templates/data-asset/) is a real built-in template. It uses this schema as follows:
 
 ```json
 {
@@ -471,12 +471,13 @@ Conditions gate file inclusion and command execution. They are evaluated against
 }
 ```
 
-This template:
-1. Generates four files unconditionally -- a dedicated `${GemName}DataAssetSystemComponent` plus the `${Name}Asset` class itself -- and a fifth, conditional interface header gated on `add_bus_interface`, with `cleanup_hint: "interface"` to scrub it out cleanly if that toggle is off.
+This template does the following:
+
+1. Generates four files unconditionally: a dedicated `${GemName}DataAssetSystemComponent`, plus the `${Name}Asset` class itself. It generates a fifth, conditional interface header, gated on `add_bus_interface`, with `cleanup_hint: "interface"` to scrub it out cleanly if that toggle is off.
 2. Uses three different `input_vars` shapes in one template: a toggle, a required text field, and a free-text field with no fixed choices.
 3. Adds `AZ::AzFramework` as a build dependency, then registers both file pairs in the gem's CMake file list.
-4. Registers the system component's module descriptor, then adds it to `GetRequiredSystemComponents()` in *both* the runtime and editor modules, unconditionally -- the asset handler needs to exist in both.
-5. Registers a `GenericAssetHandler` for the asset using the user-provided file extension and asset group.
+4. Registers the system component's module descriptor, then adds it to `GetRequiredSystemComponents()` in *both* the runtime and editor modules, unconditionally, because the asset handler needs to exist in both.
+5. Registers a `GenericAssetHandler` for the asset, using the user-provided file extension and asset group.
 6. Registers the interface header too, but only `if add_bus_interface`.
 
 See [Data Asset](templates/data-asset/) for the full field-by-field breakdown, and [Architecture > A Full-Stack Example](../architecture/#a-full-stack-example) for how this same template illustrates the wizard's execution order end to end.
@@ -485,4 +486,4 @@ See [Data Asset](templates/data-asset/) for the full field-by-field breakdown, a
 
 ## See It Applied
 
-Every built-in template implements this schema. See [Templates](templates/) for the field-by-field breakdown of each one -- Basic Component, Level Component, System Component, LyShine Component, Data Asset, and Attimage.
+Every built-in template implements this schema. See [Templates](templates/) for the field-by-field breakdown of each one: Basic Component, Level Component, System Component, LyShine Component, Data Asset, and Attimage.

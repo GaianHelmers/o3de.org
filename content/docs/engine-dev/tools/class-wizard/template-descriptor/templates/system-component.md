@@ -44,7 +44,7 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
 | `register_module_descriptor` (`module_kind: "editor"`) | `include_editor` | Registers the EditorComponent in the editor module |
 | `replace_text` | `include_editor` | Strips the `"Game"` add-component-menu category from the runtime `.cpp` so only the EditorComponent appears in the editor's Add Component menu |
 
-**Notable features:** The only template that registers `register_system_component` twice, unconditionally -- the system component is added to `GetRequiredSystemComponents()` in *both* the runtime and editor modules regardless of whether `include_editor` generates a separate EditorComponent file. This is distinct from Data Asset, which duplicates `register_system_component` for the same reason but on a dedicated `DataAssetSystemComponent` rather than the primary generated class.
+**Notable features:** The only template that registers `register_system_component` twice, unconditionally. The system component is added to `GetRequiredSystemComponents()` in *both* the runtime and editor modules, regardless of whether `include_editor` generates a separate EditorComponent file. This is distinct from Data Asset, which duplicates `register_system_component` for the same reason but on a dedicated `DataAssetSystemComponent`, not the primary generated class.
 
 
 ## Full Template JSON
@@ -176,6 +176,6 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
 
 ## Design Notes
 
-Same mechanic as [Basic Component](../basic-component/) and [Level Component](../level-component/): both the runtime and Editor files start out with `AppearsInAddComponentMenu(AZ_CRC_CE("Game"))` -- the same category as Basic Component, rather than something System-specific -- and that's the necessary command for either one to appear in the Game Add Component menu. If you have an Editor component, it needs to be available in the menu instead of the base component, so turning on `include_editor` also runs the `replace_text` command that clears the runtime file's category to `AZ_CRC_CE("")`, leaving the generated Editor variant as the one that shows up.
+Same mechanic as [Basic Component](../basic-component/) and [Level Component](../level-component/). Both the runtime and Editor files start out with `AppearsInAddComponentMenu(AZ_CRC_CE("Game"))`, the same category as Basic Component rather than something System-specific. This is the command that makes either one appear in the Game Add Component menu. If you have an Editor component, it needs to be the one available in the menu, not the base component. Turning on `include_editor` also runs the `replace_text` command that clears the runtime file's category to `AZ_CRC_CE("")`, leaving the generated Editor variant as the one that shows up.
 
-Unlike the other three, this template also calls `register_system_component` unconditionally, twice, regardless of `include_editor` -- see [Architecture > Commands Are Additive, Not Destructive](/docs/engine-dev/tools/class-wizard/architecture/#commands-are-additive-not-destructive) for why that's safe to run against an existing module.
+Unlike the other three, this template also calls `register_system_component` unconditionally, twice, regardless of `include_editor`. See [Architecture > Commands Are Additive, Not Destructive](/docs/engine-dev/tools/class-wizard/architecture/#commands-are-additive-not-destructive) for why that's safe to run against an existing module.

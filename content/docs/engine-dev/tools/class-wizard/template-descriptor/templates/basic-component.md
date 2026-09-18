@@ -42,7 +42,7 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
 | `register_module_descriptor` (`module_kind: "editor"`) | `include_editor` | Registers EditorComponent in editor module |
 | `replace_text` | `include_editor` | Strips `AppearsInAddComponentMenu` from runtime `.cpp` so only the EditorComponent appears in the editor menu |
 
-**Notable features:** Only template with both conditional interface cleanup and conditional editor adapter. The `include_editor` toggle is hidden on gems without an Editor module (`show_if: "hasEditor"`). Unlike most toggles, `add_bus_interface` defaults to `true` -- the interface header is generated unless explicitly turned off.
+**Notable features:** The only template with both conditional interface cleanup and a conditional editor adapter. The `include_editor` toggle is hidden on gems without an Editor module (`show_if: "hasEditor"`). Unlike most toggles, `add_bus_interface` defaults to `true`. The wizard generates the interface header unless you explicitly turn that toggle off.
 
 
 ## Full Template JSON
@@ -166,6 +166,6 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
 
 ## Design Notes
 
-The runtime and Editor source files both start out with `AppearsInAddComponentMenu(AZ_CRC_CE("Game"))` -- that's the necessary command for either one to appear in the Game Add Component menu at all. If you have an Editor component, it needs to be available in the menu instead of the base component. So the wizard clears the base component's category to `AZ_CRC_CE("")` to remove it, using `replace_text`: it finds that exact literal string in the *runtime* `.cpp` only and rewrites it, leaving the Editor file's own copy of the same attribute untouched. This command is itself gated on `include_editor` -- skip that toggle, and it doesn't run at all, so the runtime component simply keeps its original "Game" category since there's no Editor variant to hand visibility to.
+The runtime and Editor source files both start out with `AppearsInAddComponentMenu(AZ_CRC_CE("Game"))`. This is the command that makes either one appear in the Game Add Component menu. If you have an Editor component, it needs to be the one available in the menu, not the base component. The wizard clears the base component's category to `AZ_CRC_CE("")` using `replace_text`. This command finds that exact literal string in the *runtime* `.cpp` only, and rewrites it. It leaves the Editor file's own copy of the same attribute untouched. The command is itself gated on `include_editor`. Skip that toggle, and the command doesn't run at all. The runtime component then keeps its original "Game" category, since there's no Editor variant to hand visibility to.
 
 [Level Component](../level-component/), [System Component](../system-component/), and [LyShine Component](../lyshine-component/) all use this identical mechanic on their own category strings ("Level", "Game", and "UI" respectively).

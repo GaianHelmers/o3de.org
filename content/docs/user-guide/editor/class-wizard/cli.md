@@ -7,7 +7,7 @@ weight: 20
 
 Run these from your O3DE engine's `Tools/ClassCreationWizard/` directory.
 
-## Launch the GUI
+## To Launch the GUI
 
 ```bash
 python ClassWizard.py --engine-path "C:\o3de" --project-path "C:\MyProject"
@@ -21,7 +21,7 @@ Both flags are required. See [Getting Started](../getting-started/) for the GUI 
 python ClassWizard.py --engine-path "C:\o3de" --project-path "C:\MyProject" --list-templates
 ```
 
-Lists every template the wizard found -- from the engine, your project, and your gems.
+Lists every template the wizard found, from the engine, your project, and your gems.
 
 ## Request a template's format
 
@@ -67,7 +67,7 @@ Template: Basic Component
     replace_text(component_name=${Name}${ComponentSuffix}.cpp, text_to_replace=AppearsInAddComponentMenu, AZ_CRC_CE("Game")), replacement=AppearsInAddComponentMenu, AZ_CRC_CE(""))  [if include_editor]
 ```
 
-Notice `--add-bus-interface` already defaults to `True` and `--include-editor` defaults to `False` -- that's why the create command below doesn't need to pass either one. You'd only add `--add-bus-interface` if you wanted to *keep* the interface header on a template where it defaults off, or use the GUI to turn a default-`True` toggle off (see [Template-Specific Flags](/docs/engine-dev/tools/class-wizard/cli/#template-specific-flags) in the Developer Guide).
+Notice that `--add-bus-interface` already defaults to `True`, and `--include-editor` defaults to `False`. This is why the create command below doesn't need to pass either flag. To turn a default-`True` toggle like `add_bus_interface` off, use the GUI instead. See [Template-Specific Flags](/docs/engine-dev/tools/class-wizard/cli/#template-specific-flags) in the Developer Guide.
 
 ## Create a Basic Component
 

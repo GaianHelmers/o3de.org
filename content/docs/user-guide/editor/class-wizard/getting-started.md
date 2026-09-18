@@ -19,7 +19,7 @@ Or use the CLI:
 python ClassWizard.py --engine-path "C:\o3de" --project-path "C:\MyProject"
 ```
 
-Run this from your O3DE engine's `Tools/ClassCreationWizard/` directory. Both `--engine-path` and `--project-path` are required -- the wizard needs your project path to correctly resolve your build targets.
+Run this from your O3DE engine's `Tools/ClassCreationWizard/` directory. Both `--engine-path` and `--project-path` are required. The wizard needs your project path to resolve your build targets correctly.
 
 ## 2. Pick a template
 
@@ -29,13 +29,13 @@ Select a template from the dropdown at the top of the window. Every template dis
 
 ## 3. Choose where it goes
 
-Set the **Target** (your project or a specific gem), then pick the **Package** -- the build target the generated files will register into.
+Set the **Target** (your project or a specific gem), then pick the **Package**. The **Package** is the build target the generated files will register into.
 
 {{< image-width src="/images/user-guide/editor/class-wizard/BuildTargets.png" width="450" alt="The build target dropdown" >}}
 
 ## 4. Fill in the component details
 
-Give it a **Name**, and fill in any fields specific to the template you picked -- these change per template. For example, the Data Asset template asks for a file extension and asset group:
+Give it a **Name**. Then fill in any fields specific to the template you picked. These fields change per template. For example, the Data Asset template asks for a file extension and asset group:
 
 {{< image-width src="/images/user-guide/editor/class-wizard/CustomVariables.png" width="450" alt="Template-specific input fields, using Data Asset as an example" >}}
 
@@ -54,3 +54,7 @@ Select **Create**. The log at the bottom reports what the wizard found and did:
 {{< image-width src="/images/user-guide/editor/class-wizard/WizardLog.png" width="450" alt="The wizard's log output" >}}
 
 Your new files are now in the destination gem, registered in CMake if you left **Register Automatically** on. Open your IDE and build as usual.
+
+## Next Steps
+
+Review the [Templates](../templates/) catalogue for all the components and asset types available to create by default.

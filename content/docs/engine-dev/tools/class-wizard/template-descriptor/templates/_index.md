@@ -15,7 +15,7 @@ Each template defines a set of source files to generate, variables to collect fr
 
 ## How Templates Work
 
-A template is a directory containing a `template.json` descriptor and a `Template/` subdirectory with source file scaffolds. When the wizard processes a template, it:
+A template is a directory containing a `template.json` descriptor and a `Template/` subdirectory with source file scaffolds. When the wizard processes a template, it does the following:
 
 1. **Reads the descriptor** to determine what input variables to collect and what commands to run.
 2. **Collects user input** via the GUI or CLI flags, resolving all `${Variable}` tokens.
@@ -77,4 +77,4 @@ See the [Template Descriptor Format](../) for the full JSON schema.
 | [Data Asset](data-asset/) (also known as Generic Asset) | `data_asset` | Engine | `Asset` | `GenericAssetHandler` registration, dedicated system component |
 | [Attimage](attimage/) | `attimage` | Engine | *(none)* | Attachment image data file, no CMake/module registration |
 
-Each row links to a full breakdown of that template's input variables, generated files, and commands -- all following the schema described in the [Template Descriptor Format](/docs/engine-dev/tools/class-wizard/template-descriptor/), including its [Variables](/docs/engine-dev/tools/class-wizard/template-descriptor/#variables) and [Cleanup Hints](/docs/engine-dev/tools/class-wizard/template-descriptor/#cleanup-hints) sections.
+Each row links to a full breakdown of that template's input variables, generated files, and commands. All of them follow the schema described in the [Template Descriptor Format](/docs/engine-dev/tools/class-wizard/template-descriptor/), including its [Variables](/docs/engine-dev/tools/class-wizard/template-descriptor/#variables) and [Cleanup Hints](/docs/engine-dev/tools/class-wizard/template-descriptor/#cleanup-hints) sections.

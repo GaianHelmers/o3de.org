@@ -5,7 +5,7 @@ description: "How to create custom command plugins for the Class Creation Wizard
 weight: 200
 ---
 
-The Class Creation Wizard uses a modular plugin architecture. Each command is a self-contained Python class that registers itself with the wizard at load time. You can add new commands to the engine, your project, or any gem -- no changes to the wizard core required.
+The **Class Creation Wizard** uses a modular plugin architecture. Each command is a self-contained Python class that registers itself with the wizard at load time. You can add new commands to the engine, your project, or any gem. None of this requires changes to the wizard core.
 
 ## Writing a Command
 
@@ -19,11 +19,13 @@ MyGem/
     my_custom_command.py
 ```
 
-As indicated above, the engine's own `commands/` directory is just the first location the wizard checks -- not the sole place to create a command. A gem can carry its own `ClassWizardCommands/` folder the same way a project can, and it's picked up automatically as long as it's named and placed correctly -- a `.py` file, not prefixed with `_`, directly inside that `ClassWizardCommands/` directory. This matters most when a command is tightly coupled to a specific gem's own codebase; see [Architecture > A Self-Contained Creation System, Scoped to a Gem](/docs/engine-dev/tools/class-wizard/architecture/#a-self-contained-creation-system-scoped-to-a-gem) for why that's the real point of this being pluggable at the gem level at all. See [Command Discovery](/docs/engine-dev/tools/class-wizard/commands/#command-discovery) for the full scan order and priority across the engine, your project, and every gem.
+The engine's own `commands/` directory is just the first location the wizard checks. It isn't the only place to create a command. A gem can carry its own `ClassWizardCommands/` folder, the same way a project can. The wizard picks up any correctly named and placed file automatically: a `.py` file, not prefixed with `_`, directly inside that `ClassWizardCommands/` directory.
+
+This matters most when a command is tightly coupled to a specific gem's own codebase. See [Architecture > A Self-Contained Creation System, Scoped to a Gem](/docs/engine-dev/tools/class-wizard/architecture/#a-self-contained-creation-system-scoped-to-a-gem) for why gem-level pluggability is the point of this design. See [Command Discovery](/docs/engine-dev/tools/class-wizard/commands/#command-discovery) for the full scan order and priority across the engine, your project, and every gem.
 
 ### 2. Define the Command Class
 
-Every command follows the same shape. Here's what each piece is actually for.
+Every command follows the same shape. This section explains what each piece does.
 
 **Register and subclass.**
 
@@ -35,7 +37,7 @@ class MyCustomCommand(WizardCommand):
     """One-line summary of what this command does."""
 ```
 
-The decorator's argument, `"my_custom_command"`, is the exact string a template's `process_commands` entries will use in their `"command"` field -- it's independent of the class name, and nothing checks that the two stay in sync with the `name` property below. Subclassing [`WizardCommand`](#the-wizardcommand-interface) is what makes this a command at all: it's where the abstract methods you must implement, and the default property values you get for free, both come from.
+The decorator's argument, `"my_custom_command"`, is the exact string a template's `process_commands` entries use in their `"command"` field. This string is independent of the class name. Nothing checks that the two stay in sync with the `name` property below. Subclassing [`WizardCommand`](#the-wizardcommand-interface) makes this a command. The abstract methods you must implement, and the default property values you get for free, both come from that base class.
 
 **Metadata.**
 
@@ -57,7 +59,7 @@ The decorator's argument, `"my_custom_command"`, is the exact string a template'
         return "Your Name"
 ```
 
-`name` is the one property here that matters beyond documentation -- keep it identical to the decorator's argument, since letting them drift apart is a silent bug rather than an error. `description` is the only one a user ever actually sees, surfaced in `--template-help` output. `version` and `author` are pure bookkeeping, useful mainly if you're maintaining a command across multiple gems; both are safe to leave at their defaults otherwise.
+`name` is the one property here that matters beyond documentation. Keep it identical to the decorator's argument. Letting the two drift apart is a silent bug, not an error. `description` is the only property a user actually sees, in `--template-help` output. `version` and `author` are bookkeeping. Set them if you maintain a command across multiple gems. Otherwise, leave both at their defaults.
 
 **The registration flag.**
 
@@ -66,7 +68,7 @@ The decorator's argument, `"my_custom_command"`, is the exact string a template'
     is_registration_command = False
 ```
 
-This single flag decides whether `--automatic-register` gates your command. Leave it `False` -- the default -- for anything that isn't modifying CMake or module files; `replace_text`, `add_gem_dependency`, and every asset-copying command in the [built-in set](../built-in-commands/) all leave it unset for exactly that reason.
+This single flag decides whether `--automatic-register` gates your command. Leave it `False`, the default, for anything that doesn't modify CMake or module files. `replace_text`, `add_gem_dependency`, and every asset-copying command in the [built-in set](../built-in-commands/) leave it unset for that reason.
 
 **The constructor.**
 
@@ -76,7 +78,7 @@ This single flag decides whether `--automatic-register` gates your command. Leav
         self.value = value
 ```
 
-This signature *is* your command's schema -- see [Constructor Arguments](#constructor-arguments) below. Every parameter here is a key a template author can pass in `args`. Give optional ones a default; leave required ones without one, so a template that omits them fails loudly at construction instead of failing confusingly later.
+This signature *is* your command's schema. See [Constructor Arguments](#constructor-arguments) below. Every parameter here is a key a template author can pass in `args`. Give optional parameters a default value. Leave required parameters without one, so a template that omits them fails at construction, loudly, instead of failing confusingly later.
 
 **The action.**
 
@@ -99,9 +101,9 @@ This signature *is* your command's schema -- see [Constructor Arguments](#constr
         return True
 ```
 
-This is the one method every command must implement. It receives the single [`CommandContext`](#the-commandcontext) shared by every command in the run, and does whatever the command actually promises -- here, a find-and-replace on a generated file. The `True`/`False` return is informational, not a control signal: nothing in the wizard branches on it. `ctx.logger()` is what actually surfaces success or failure to whoever's watching, in both the GUI status panel and the CLI's console output -- so log clearly, especially on the failure path.
+This is the one method every command must implement. It receives the single [`CommandContext`](#the-commandcontext) shared by every command in the run. It does whatever the command promises: here, a find-and-replace on a generated file. The `True`/`False` return is informational, not a control signal. Nothing in the wizard branches on it. `ctx.logger()` is what actually surfaces success or failure, in both the GUI status panel and the CLI's console output. Log clearly, especially on the failure path.
 
-Put together, those five pieces are the whole class:
+These five pieces make up the whole class:
 
 ```python
 from command_plugin import CommandRegistry, WizardCommand, CommandContext
@@ -231,7 +233,7 @@ class MyRegistrationCmd(WizardCommand):
 
 ## Constructor Arguments
 
-Constructor parameters map directly to the `args` object in the template JSON. The wizard calls `CommandRegistry.create(name, args)` which instantiates your class with `**args`. So if your template says:
+Constructor parameters map directly to the `args` object in the template JSON. The wizard calls `CommandRegistry.create(name, args)`, which instantiates your class with `**args`. If your template says:
 
 ```json
 {
@@ -254,7 +256,7 @@ Use default values for optional arguments.
 
 All string values in `args` are resolved **before** your constructor is called. `${Name}`, `${GemName}`, `${ComponentSuffix}`, and any template `input_vars` are substituted automatically. Your command receives final, resolved strings.
 
-To access raw variable values at execution time (e.g. for the `replace_text` pattern), use `ctx.variables`:
+To access raw variable values at execution time, for example to implement the `replace_text` pattern, use `ctx.variables`:
 
 ```python
 channel = ctx.variables.get("pulse_channel", "DefaultChannel")
@@ -289,21 +291,21 @@ Condition syntax:
 ## Tips
 
 - **Keep commands focused.** One command should do one thing. Compose complex workflows by chaining multiple commands in the template's `process_commands` array.
-- **Log clearly.** Use `ctx.logger()` throughout -- users see this output in both GUI and CLI modes.
-- **Return False on failure.** The wizard doesn't inspect this value -- it never stops or reports on it for you, and always moves on to the next command. `ctx.logger()` is the only thing that actually tells anyone a command failed, so log it yourself before returning `False`. Don't raise exceptions unless something is truly unrecoverable.
+- **Log clearly.** Use `ctx.logger()` throughout. Users see this output in both GUI and CLI modes.
+- **Return False on failure.** The wizard doesn't inspect this value. It never stops or reports on it for you, and it always moves on to the next command. `ctx.logger()` is the only thing that tells anyone a command failed, so log the failure yourself before returning `False`. Don't raise exceptions unless something is truly unrecoverable.
 - **Use `CMakeAnalyzer`** if you need to parse or modify CMake files. It's available from `command_plugin`:
   ```python
   from command_plugin import CMakeAnalyzer
   targets = CMakeAnalyzer.scan_targets(ctx.build_target.file.parent, ctx.namespace)
   ```
-  `scan_targets(gem_path, gem_name)` takes the directory to search and the gem name used to resolve `${GemName}`-style tokens in target names -- it returns a `List[CMakeTarget]`, not a single target.
+  `scan_targets(gem_path, gem_name)` takes the directory to search and the gem name used to resolve `${GemName}`-style tokens in target names. It returns a `List[CMakeTarget]`, not a single target.
 - **Test with CLI first.** Run with `--automatic-register` and check the output before using the GUI.
 
 ---
 
 ## Blank Command Template
 
-A complete, minimal, fully working command -- no required arguments, does nothing but log and succeed. Copy this into a new `.py` file in a `ClassWizardCommands/` directory, rename `my_command` / `MyCommand` throughout, and build out `execute()` from there.
+A complete, minimal, fully working command. It takes no required arguments and does nothing but log and succeed. Copy it into a new `.py` file in a `ClassWizardCommands/` directory, rename `my_command` / `MyCommand` throughout, and build out `execute()` from there.
 
 ```python
 from command_plugin import CommandRegistry, WizardCommand, CommandContext
@@ -345,4 +347,4 @@ This is usable immediately, with no `args` at all:
 }
 ```
 
-Add an `__init__(self, ...)` when the command needs input from the template -- see [Constructor Arguments](#constructor-arguments) -- and replace the body of `execute()` with whatever the command actually needs to do, using `ctx` to reach the destination gem, the resolved variables, and the logger.
+Add an `__init__(self, ...)` when the command needs input from the template. See [Constructor Arguments](#constructor-arguments). Replace the body of `execute()` with whatever the command needs to do, using `ctx` to reach the destination gem, the resolved variables, and the logger.

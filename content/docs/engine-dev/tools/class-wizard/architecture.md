@@ -11,41 +11,41 @@ This information is for developers extending or modifying the **Class Creation W
 
 ## What It Does
 
-The Class Creation Wizard builds directly on O3DE's original templating system -- the same `template.json` format and [`copyFiles`](../template-descriptor/#copyfiles) staging mechanism used by the plain `o3de create-from-template` CLI. It doesn't replace that system. It breaks "generate a class" into more granular stages, each with its own purpose, by layering wizard-specific structure on top of the standard format.
+The Class Creation Wizard builds on O3DE's existing templating system. It uses the same `template.json` format and the same [`copyFiles`](../template-descriptor/#copyfiles) staging mechanism as the `o3de create-from-template` CLI. The wizard doesn't replace that system. It adds a layer of wizard-specific structure on top of it. That layer splits "generate a class" into separate stages, each with its own purpose.
 
-That layer starts with the file list itself. A `copyFiles` entry can carry wizard-only details -- `condition`, `cleanup_hint`, `isEditor`, `isInterface`, `excludeFromMerge` -- that O3DE's own template engine doesn't understand and copies through untouched. The wizard is what actually reads and acts on them, in a pass that runs *after* O3DE's own staging finishes: this is how an optional interface header or an EditorComponent variant gets included or dropped, and how references to it get scrubbed from the files that remain (see [Conditions](../template-descriptor/#conditions) and [Cleanup Hints](../template-descriptor/#cleanup-hints)).
+The layer starts with the file list. A `copyFiles` entry can carry wizard-only fields: `condition`, `cleanup_hint`, `isEditor`, `isInterface`, and `excludeFromMerge`. O3DE's own template engine doesn't recognize these fields. It copies them through untouched. The wizard reads and acts on these fields in a separate pass, after O3DE's own staging finishes. This pass decides whether an optional interface header or an EditorComponent variant gets included or dropped. It also scrubs references to dropped files from the files that remain. See [Conditions](../template-descriptor/#conditions) and [Cleanup Hints](../template-descriptor/#cleanup-hints).
 
-Everything else the wizard adds lives in one place: the [`"class_wizard": {}` block](../template-descriptor/#the-class_wizard-block). Its presence is what marks a template as wizard-compatible at all -- a `template.json` without it is invisible to the wizard, even if `copyFiles` is otherwise well-formed. Inside that block:
+Everything else the wizard adds lives in one place: the [`"class_wizard": {}` block](../template-descriptor/#the-class_wizard-block). This block marks a template as wizard-compatible. A `template.json` file without this block is invisible to the wizard, even when `copyFiles` is otherwise well-formed. The block contains two things:
 
-- [**`input_vars`**](../template-descriptor/#input_vars) let a template expose its own, nonstandard inputs -- fields beyond the three the wizard always provides (`${Name}`, `${GemName}`, `${ComponentSuffix}`) -- as GUI widgets and CLI flags.
-- [**`process_commands`**](../template-descriptor/#process_commands) lists, in chronological order, the steps needed to actually finish the job: everything that has to happen to the generated files and the surrounding gem once they're on disk.
+- [**`input_vars`**](../template-descriptor/#input_vars) -- the template's own input fields, beyond the three variables the wizard always provides (`${Name}`, `${GemName}`, `${ComponentSuffix}`). Each one becomes a GUI widget and a CLI flag.
+- [**`process_commands`**](../template-descriptor/#process_commands) -- an ordered list of the steps needed to finish the job. This covers everything that has to happen to the generated files and the surrounding gem after they reach disk.
 
 ### Execution Order
 
-Put together, a single **Create** click or CLI invocation runs through this sequence:
+A single **Create** click, or a single CLI invocation, runs through this sequence:
 
 1. **Discovery.** The wizard scans for every `template.json` with a `class_wizard` block, and every command plugin, across the engine, project, and gems.
-2. **Input collection.** You pick a template and a destination, and fill in its `input_vars` -- resolved alongside the three built-in variables.
-3. **Staging.** Nothing touches your gem yet. O3DE's own `create-from-template` mechanism copies every `copyFiles` entry into a **temporary staging directory**, substituting `${variable}` tokens in paths and content as it goes. Every file the template lists exists here -- including any that will never survive to your gem.
-4. **Conditional exclusion and cleanup -- still in staging.** The wizard evaluates each staged file's `condition`. Files that fail are deleted from the staging directory outright. Then, for each file just deleted, the wizard scrubs references to it out of the files that remain, per its `cleanup_hint` -- stripping `#include` lines, EBus handler inheritance, and `BusConnect`/`BusDisconnect` calls. All of this happens on the temp copy; nothing scrutinized this way ever reaches your source tree.
-5. **Merge.** Only the files that survived staging are copied into your gem's source tree. (`excludeFromMerge` files are the one exception -- they stay in the staging directory only, for a command like [`copy_file_to`](../commands/built-in-commands/#copy_file_to) to place somewhere other than the default location.)
-6. **Commands -- against the real destination, not the staging copy.** `process_commands` now run in order against your actual gem. Each is gated by its own `condition`, and [registration commands](../commands/built-in-commands/#registration-commands) are additionally gated by `--automatic-register`.
+2. **Input collection.** You pick a template and a destination. You fill in the template's `input_vars`. The wizard resolves these alongside the three built-in variables.
+3. **Staging.** Nothing touches your gem yet. O3DE's own `create-from-template` mechanism copies every `copyFiles` entry into a **temporary staging directory**. It substitutes `${variable}` tokens in paths and content as it copies. Every file the template lists exists here, including files that will never reach your gem.
+4. **Conditional exclusion and cleanup, still in staging.** The wizard evaluates each staged file's `condition`. It deletes files that fail the condition from the staging directory. For each deleted file, the wizard also scrubs references to it from the files that remain, based on the file's `cleanup_hint`. This strips `#include` lines, EBus handler inheritance, and `BusConnect`/`BusDisconnect` calls. All of this happens on the temporary copy. None of it reaches your source tree.
+5. **Merge.** The wizard copies the files that survived staging into your gem's source tree. `excludeFromMerge` files are the one exception. They stay in the staging directory. A command such as [`copy_file_to`](../commands/built-in-commands/#copy_file_to) can then place them somewhere other than the default location.
+6. **Commands, against the real destination.** `process_commands` run in order against your actual gem, not the staging copy. Each command is gated by its own `condition`. [Registration commands](../commands/built-in-commands/#registration-commands) are also gated by `--automatic-register`.
 
 ### Commands Are Additive, Not Destructive
 
-This is the detail that makes the command layer powerful rather than just convenient: a registration command never blindly overwrites, and it never assumes it's starting from nothing. [`register_system_component`](../commands/built-in-commands/#register_system_component), for example, first checks whether *this exact component* is already listed in the target module's `GetRequiredSystemComponents()` block. If it is, the command logs that and stops there -- running the wizard twice is safe. If it isn't, the command locates that block (already present in the module file from when the gem itself was scaffolded, long before this template ran) and injects one new entry into it, fixing up the trailing comma on whatever entry was there before. It never recreates the block and never disturbs entries that other templates, or other wizard runs, already put there. [`register_module_descriptor`](../commands/built-in-commands/#register_module_descriptor) follows the identical pattern for `CreateDescriptor()` calls.
+A registration command never overwrites existing content, and it never assumes it's starting from nothing. [`register_system_component`](../commands/built-in-commands/#register_system_component) checks whether *this exact component* is already listed in the target module's `GetRequiredSystemComponents()` block. If it is, the command logs that fact and stops. Running the wizard twice is safe. If it isn't, the command locates that block. The block already exists in the module file, from when the gem itself was scaffolded, before this template ran. The command injects one new entry into the block and fixes the trailing comma on the previous last entry. It doesn't recreate the block. It doesn't disturb entries that other templates or other wizard runs already added. [`register_module_descriptor`](../commands/built-in-commands/#register_module_descriptor) follows the same pattern for `CreateDescriptor()` calls.
 
-[Data Asset](../template-descriptor/templates/data-asset/) calls `register_system_component` twice -- once for the runtime module, once for the editor module -- and both calls land the same way: find the existing block, add one entry, leave everything else alone. Generate a second Data Asset in the same gem later, and both calls repeat that -- additively, without touching the first one's registration.
+[Data Asset](../template-descriptor/templates/data-asset/) calls `register_system_component` twice: once for the runtime module, once for the editor module. Both calls find the existing block, add one entry, and leave everything else alone. If you generate a second Data Asset in the same gem later, both calls repeat that process. They add the second asset's entries without touching the first asset's registration.
 
 ### A Full-Stack Example
 
-[Data Asset](../template-descriptor/templates/data-asset/) exercises nearly all of this at once: a conditional interface file with cleanup, three differently-shaped `input_vars` (a toggle, a required text field, a free-text field), and seven `process_commands` -- an unconditional gem dependency, two file registrations, a module descriptor, two system component registrations (runtime *and* editor, unconditionally), a [built-in command](../commands/built-in-commands/) that wires up a `GenericAssetHandler`, and one command gated behind its own `add_bus_interface` toggle. Once you've read this page, that template reads as a straightforward composition of the pieces above -- see its [full breakdown](../template-descriptor/templates/data-asset/) for the exact schema.
+[Data Asset](../template-descriptor/templates/data-asset/) demonstrates this end to end. It has a conditional interface file with cleanup. It has three differently-shaped `input_vars`: a toggle, a required text field, and a free-text field. It has seven `process_commands`: an unconditional gem dependency, two file registrations, a module descriptor, two system component registrations (runtime and editor, both unconditional), a [built-in command](../commands/built-in-commands/) that wires up a `GenericAssetHandler`, and one command gated behind its own `add_bus_interface` toggle. After reading this page, that template reads as a composition of the pieces above. See its [full breakdown](../template-descriptor/templates/data-asset/) for the exact schema.
 
 ---
 
 ## Template and Command Discovery
 
-This is how the wizard finds what it can offer, before you ever open it. If you're authoring a template or a command rather than just using one, this is where your files need to live -- see the [Template Descriptor Format](../template-descriptor/) for the schema a template needs, or [Command System](../commands/) to add a new command.
+This is how the wizard finds every template and command it can offer, before you open it. If you're authoring a template or a command, this is where your files need to live. See the [Template Descriptor Format](../template-descriptor/) for the schema a template needs. See [Command System](../commands/) to add a new command.
 
 ### Template Discovery
 
@@ -57,25 +57,25 @@ The `WizardTemplateScanner` scans for `template.json` files under a `Templates/`
 | 2 | Project | `<project_path>/Templates/*/template.json` |
 | 3 | Gems | `<gem_path>/Templates/*/template.json` |
 
-Gem paths are resolved via the O3DE manifest API's `manifest.get_project_enabled_gems()`. If the manifest API is unavailable, the wizard falls back to manually parsing the project's `project.json` and the user's `o3de_manifest.json`.
+Gem paths are resolved through the O3DE manifest API's `manifest.get_project_enabled_gems()`. If the manifest API is unavailable, the wizard falls back to manually parsing the project's `project.json` and the user's `o3de_manifest.json`.
 
-A `template.json` must contain a `"class_wizard"` block to be recognized. Templates without this block are ignored. Templates are deduplicated by resolved directory path and sorted alphabetically by display name.
+A `template.json` file must contain a `"class_wizard"` block to be recognized. Templates without this block are ignored. Templates are deduplicated by resolved directory path and sorted alphabetically by display name.
 
 ### Command Discovery
 
-The `CommandPluginLoader` scans for Python files in three locations, in priority order: the engine's `Tools/ClassCreationWizard/commands/` directory, then a flat `ClassWizardCommands/` directory under the project, then a `ClassWizardCommands/` directory under each gem (alphabetical by gem name). Each command file uses `@CommandRegistry.register()` to self-register. Commands are loaded via `importlib` with collision detection -- duplicate command names raise warnings and the first registration wins.
+The `CommandPluginLoader` scans Python files in three locations, in priority order. First, the engine's `Tools/ClassCreationWizard/commands/` directory. Second, a flat `ClassWizardCommands/` directory under the project. Third, a `ClassWizardCommands/` directory under each gem, in alphabetical order by gem name. Each command file self-registers with `@CommandRegistry.register()`. The wizard loads commands with `importlib` and detects name collisions. If two commands share a name, the first one loaded wins, and the wizard logs a warning.
 
 ---
 
 ## Dynamic Variables
 
-If you're deciding what a template should ask the user for, this is the mechanism -- the full field-by-field syntax lives in [Template Descriptor Format > input_vars](../template-descriptor/#input_vars).
+This is the mechanism for deciding what a template asks the user for. The full field-by-field syntax lives in [Template Descriptor Format > input_vars](../template-descriptor/#input_vars).
 
-Templates define **input variables** -- toggles, text fields, dropdowns, and numeric fields -- that appear in the GUI or map to CLI flags. These variables flow through every part of the system:
+Templates define **input variables**: toggles, text fields, dropdowns, and numeric fields. Each one appears in the GUI and maps to a CLI flag. These variables flow through every part of the system:
 
 - **File names and paths** -- `${Name}`, `${GemName}`, `${ComponentSuffix}`
 - **Conditional file inclusion** -- optional interface headers, choosing between runtime and editor modules
-- **Command arguments** -- pass user-provided values like file extensions, asset groups, or pixel dimensions directly into post-creation commands
+- **Command arguments** -- user-provided values, such as file extensions, asset groups, or pixel dimensions, passed directly into post-creation commands
 - **In-file text replacement** -- the `replace_text` command substitutes placeholder tokens in generated source files with variable values
 
 ### Built-in Variables
@@ -96,25 +96,25 @@ See the [Template Descriptor Format](../template-descriptor/) for the full varia
 
 ## Layered Architecture
 
-This is the mental model for the rest of this guide. Pick your layer below, then go read its dedicated page:
+This is the mental model for the sections that follow. Pick a layer below, then read its dedicated page:
 
 - **O3DE templates** handle raw file scaffolding and variable substitution in source code
 - **[Template descriptors](../template-descriptor/)** (`template.json`) define what the wizard should do with those files -- which commands to run, which variables to collect, which files are conditional
 - **[Command plugins](../commands/)** execute the actual build integration -- modifying CMake files, module descriptors, and registration code
 
-Together, these layers allow complex class creation workflows to be defined entirely in JSON and Python, without modifying the wizard core.
+Together, these layers let a template author define complex class creation workflows entirely in JSON and Python, without modifying the wizard core.
 
 ### A Self-Contained Creation System, Scoped to a Gem
 
-This is what the layering is actually *for*. A gem's codebase has its own conventions -- naming patterns, base classes, EBus wiring, registration idioms -- that are specific to that gem and have no reason to live in the engine. The wizard's three layers exist so a gem author can bind all of that together:
+This is the purpose of the layering. A gem's codebase has its own conventions: naming patterns, base classes, EBus wiring, registration idioms. These conventions are specific to that gem. They have no reason to live in the engine. The wizard's three layers let a gem author bind all of this together:
 
-- **The codebase** -- the gem's actual C++ source: its conventions, structure, and the shape of the classes it already has.
-- **Templating** -- to reproduce the extensible, repeatable pieces of that codebase, so a new class comes out looking exactly like the gem's existing ones.
-- **Commands** -- to satisfy whatever integration work is too complex for file-copying alone: wiring a new class into a gem-specific registry, dependency list, or bespoke system that only that gem's code understands.
+- **The codebase** -- the gem's actual C++ source, its conventions, and the shape of its existing classes.
+- **Templating** -- reproduces the extensible, repeatable pieces of that codebase, so a new class matches the gem's existing ones.
+- **Commands** -- handle integration work that file-copying alone can't do: wiring a new class into a gem-specific registry, dependency list, or other system that only that gem's code understands.
 
-None of this needs to be generic, and none of it needs to live in the engine. A `Templates/` directory and a `ClassWizardCommands/` directory, both scoped inside a single gem module, are enough to stand up a complete, gem-specific creation system -- one that produces classes indistinguishable from the gem's hand-written code, using commands built specifically to understand that gem's own patterns.
+None of this needs to be generic. None of it needs to live in the engine. A `Templates/` directory and a `ClassWizardCommands/` directory, both scoped inside a single gem module, are enough to build a complete, gem-specific creation system. That system produces classes that match the gem's hand-written code, using commands built to understand that gem's own patterns.
 
-It deploys the same way every other part of a gem does: nothing to register, nothing to configure. The moment that gem is enabled for a project -- [discovered the same way as everything else](#template-and-command-discovery) -- its templates and commands are available in the wizard, exactly as if they'd shipped with the engine. That's the same on-demand, plug-in model O3DE's own gem system uses everywhere else; the wizard just extends it to code generation.
+It deploys the same way every other part of a gem does. There's nothing to register and nothing to configure. When a project enables that gem, the wizard [discovers its templates and commands the same way it discovers everything else](#template-and-command-discovery). They become available immediately, the same as templates and commands shipped with the engine. This is the same on-demand, plug-in model O3DE's own gem system uses everywhere else. The wizard extends that model to code generation.
 
 ---
 
@@ -126,17 +126,17 @@ This section is about the implementation of the wizard's own PySide6 GUI applica
 
 ### Launching
 
-From within the O3DE Editor, the wizard is reachable via **File > New Component**. Standalone, it's launched from the command line:
+From the O3DE Editor, open the wizard through **File > New Component**. You can also launch it standalone, from the command line:
 
 ```bash
 python ClassWizard.py --engine-path "C:\o3de" --project-path "C:\MyProject"
 ```
 
-Opens the graphical interface. `--project-path` is required alongside `--engine-path` -- without it, the wizard cannot correctly resolve and scrub build targets.
+This opens the graphical interface. `--project-path` is required alongside `--engine-path`. Without it, the wizard can't resolve and scrub build targets correctly.
 
 ### Generation Flow
 
-1. **Template Selection.** The top combo box lists all discovered templates. "Basic Component" is always pinned first; the rest are sorted alphabetically by display name.
+1. **Template Selection.** The top combo box lists all discovered templates. "Basic Component" is always pinned first. The rest are sorted alphabetically by display name.
 
 2. **Input Fields.** Dynamic fields are generated from each template's `input_vars` definition:
 
@@ -150,7 +150,7 @@ Opens the graphical interface. `--project-path` is required alongside `--engine-
 
 3. **Create Button.** Validates all required fields, resolves variables, and runs the command pipeline.
 
-4. **Status Panel.** Shows per-command status as the pipeline executes: pending (grey) to active to success (green) or fail (red).
+4. **Status Panel.** Shows each command's status as the pipeline runs: pending (grey), active, success (green), or fail (red).
 
 ### GUI Features
 

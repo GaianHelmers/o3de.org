@@ -161,7 +161,7 @@ Performs find-and-replace on a generated source file. Useful for injecting varia
 
 #### copy_file_to
 
-General-purpose "copy one staged file to any destination" command. Intended as the single primitive that replaces the older `copy_file` / `copy_setreg` / `copy_asset_files` / `copy_variant_files` family in new templates -- those commands remain registered for templates already using them.
+General-purpose "copy one staged file to any destination" command. This is the single primitive intended to replace the older `copy_file` / `copy_setreg` / `copy_asset_files` / `copy_variant_files` family in new templates. Those commands remain registered for templates already using them.
 
 | Arg | Type | Description |
 |---|---|---|
@@ -203,7 +203,7 @@ Copies a template's asset subtree (shaders, `.pass`, `.azasset`, materials, text
 | `is_templated` | bool | Apply `${variable}` substitution to file contents (default `true`) |
 | `skip_existing` | bool | Don't overwrite existing destination files (default `true`) |
 
-**Behavior:** Asset files belong at `<gem>/Assets/...`, not under the C++ build tree that normal staging writes to. This command reads directly from a sibling `TemplateAssets/` folder (never touched by staging) and copies it into the gem's `Assets/` tree, applying `${Name}`/`${GemName}` substitution to both paths and contents.
+**Behavior:** Asset files belong at `<gem>/Assets/...`, not under the C++ build tree that normal staging writes to. This command reads directly from a sibling `TemplateAssets/` folder, which staging never touches. It copies that folder into the gem's `Assets/` tree, applying `${Name}`/`${GemName}` substitution to both paths and contents.
 
 ---
 
@@ -218,7 +218,7 @@ Copies one of several parallel variant subtrees into the gem's source tree, sele
 | `dest_subdir` | string | Folder under the gem root to write into (default `""`, i.e. gem root) |
 | `is_templated` / `skip_existing` | bool | Same as `copy_file_to` |
 
-**Behavior:** Reads the variant variable's value, copies only the matching `<template>/Variants/<value>/` subtree, and skips the others -- letting several mutually-exclusive file sets (e.g. different `RenderingSystemComponent` shapes) share the same destination paths.
+**Behavior:** Reads the variant variable's value, copies only the matching `<template>/Variants/<value>/` subtree, and skips the others. This lets multiple mutually-exclusive file sets (e.g. different `RenderingSystemComponent` shapes) share the same destination paths.
 
 ---
 

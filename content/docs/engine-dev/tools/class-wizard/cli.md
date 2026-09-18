@@ -5,8 +5,7 @@ description: "Complete command-line reference for the Class Creation Wizard."
 weight: 200
 ---
 
-The Class Creation Wizard runs fully headless via command-line. Template-specific flags are
-discovered dynamically from each template's `input_vars`, so the exact flag set changes per
+The **Class Creation Wizard** runs fully headless from the command line. It discovers template-specific flags dynamically from each template's `input_vars`, so the exact flag set changes per
 template. Use `--template-help <template>` to get the complete command for any template.
 
 ---
@@ -90,12 +89,12 @@ Flag names are derived from `var_name` with underscores replaced by hyphens:
 `add_bus_interface` -> `--add-bus-interface`
 
 A toggle flag is a plain "turn on" switch (`store_true`). If the template's `default_value` for that
-toggle is already `true` (as with `add_bus_interface` on every component template), there is no CLI
-flag to turn it back off -- passing `--add-bus-interface` is a no-op, and there is currently no
-`--no-add-bus-interface` equivalent. Toggles that default to `false` (like `include_editor`) work as
-expected: omit the flag to leave it off, pass it to turn it on.
+toggle is already `true`, as with `add_bus_interface` on every component template, there is no CLI
+flag to turn it back off. Passing `--add-bus-interface` is a no-op. There is currently no
+`--no-add-bus-interface` equivalent. Toggles that default to `false`, like `include_editor`, work as
+expected: omit the flag to leave it off, pass the flag to turn it on.
 
-Flags marked `show_if` are optional at the CLI level (the condition is simply false when omitted),
+Flags marked `show_if` are optional at the CLI level (the condition is false when omitted),
 but they are only shown in the Editor GUI when the gem satisfies the condition.
 
 ---
@@ -176,7 +175,7 @@ python ClassWizard.py \
   --keep-comments
 ```
 
-`add_bus_interface` defaults to `true` on every component template and has no CLI flag to disable it (see [Template-Specific Flags](#template-specific-flags)), so there is no CLI-only way to omit the interface header -- use the GUI to turn it off.
+`add_bus_interface` defaults to `true` on every component template and has no CLI flag to disable it (see [Template-Specific Flags](#template-specific-flags)). There is no CLI-only way to omit the interface header. Use the GUI to turn it off.
 
 ### System Component
 
