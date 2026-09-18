@@ -181,3 +181,9 @@ An attachment image asset definition for rendering features. Unlike the componen
     }
 }
 ```
+
+## Design Notes
+
+`color_format`'s dropdown options aren't a convenience list -- they're the *only* enforcement that exists. The generated `.attimage` file writes the chosen format in verbatim and unquoted, as `"Format": ${Format}`: whatever string `replace_text` substitutes becomes literal JSON content, not a validated enum. A value outside the real set of engine pixel formats wouldn't just be semantically wrong -- it could produce a `.attimage` file that fails to parse as JSON at all. Restricting `color_format` to a fixed `dropdown` is what keeps that from being possible through the GUI or CLI.
+
+The same file mixes two different substitution mechanisms. `${Name}` is filled in automatically during O3DE's own staging pass, the same as on every other template. `${Width}`, `${Height}`, `${Format}`, and `${IsUnique}` are not -- they're placeholder tokens the wizard's own variable resolver doesn't recognize by name, so the template instead runs four separate `replace_text` commands after staging, each mapping one literal token to a `replacement_var` pulled from the matching input variable. It's a simple pattern, but any template author reaching for a non-standard placeholder scheme -- rather than a `${var_name}` the wizard's resolver already understands -- ends up here: one `replace_text` command per marker.

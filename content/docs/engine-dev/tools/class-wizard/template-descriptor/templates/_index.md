@@ -6,7 +6,7 @@ weight: 300
 ---
 
 {{< note >}}
-This page assumes you've read the [Template Descriptor Format](../). It shows how that schema is applied across every built-in template -- then links to a full breakdown of each one.
+This page assumes you've read the [Template Descriptor Format](/docs/engine-dev/tools/class-wizard/template-descriptor/). It shows how that schema is applied across every built-in template -- then links to a full breakdown of each one.
 {{< /note >}}
 
 Each template defines a set of source files to generate, variables to collect from the user, and commands to run for build integration.
@@ -77,4 +77,4 @@ See the [Template Descriptor Format](../) for the full JSON schema.
 | [Data Asset](data-asset/) (also known as Generic Asset) | `data_asset` | Engine | `Asset` | `GenericAssetHandler` registration, dedicated system component |
 | [Attimage](attimage/) | `attimage` | Engine | *(none)* | Attachment image data file, no CMake/module registration |
 
-Each row links to a full breakdown of that template's input variables, generated files, and commands -- all following the schema described in the [Template Descriptor Format](../), including its [Variables](../#variables) and [Cleanup Hints](../#cleanup-hints) sections.
+Each row links to a full breakdown of that template's input variables, generated files, and commands -- all following the schema described in the [Template Descriptor Format](/docs/engine-dev/tools/class-wizard/template-descriptor/), including its [Variables](/docs/engine-dev/tools/class-wizard/template-descriptor/#variables) and [Cleanup Hints](/docs/engine-dev/tools/class-wizard/template-descriptor/#cleanup-hints) sections.

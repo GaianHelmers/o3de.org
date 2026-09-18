@@ -175,3 +175,7 @@ The interface header carries `cleanup_hint: "interface"` -- if not requested, al
 ```
 
 Note: the JSON's `description` field ("Creates a custom data asset with setreg configuration") predates this version of the template -- the current `process_commands` no longer touch a `.setreg` file. Treat the prose sections above as the authoritative description of current behavior.
+
+## Design Notes
+
+Data Asset has no `include_editor` toggle and no separate EditorComponent file -- its `${GemName}DataAssetSystemComponent` is registered into `GetRequiredSystemComponents()` in *both* the runtime and editor modules unconditionally (see [Architecture > Commands Are Additive, Not Destructive](/docs/engine-dev/tools/class-wizard/architecture/#commands-are-additive-not-destructive)). There's no `AppearsInAddComponentMenu` visibility conflict to resolve here the way there is on [Basic Component](../basic-component/) and its relatives, because a system component is never placed by hand from that menu in the first place -- it only needs to exist in whichever module is running. That's also why this is the only template that calls `register_system_component` twice against the *same* component name, rather than a runtime/Editor pair.

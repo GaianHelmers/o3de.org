@@ -163,3 +163,9 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
     }
 }
 ```
+
+## Design Notes
+
+The runtime and Editor source files both start out with `AppearsInAddComponentMenu(AZ_CRC_CE("Game"))` -- that's the necessary command for either one to appear in the Game Add Component menu at all. If you have an Editor component, it needs to be available in the menu instead of the base component. So the wizard clears the base component's category to `AZ_CRC_CE("")` to remove it, using `replace_text`: it finds that exact literal string in the *runtime* `.cpp` only and rewrites it, leaving the Editor file's own copy of the same attribute untouched. This command is itself gated on `include_editor` -- skip that toggle, and it doesn't run at all, so the runtime component simply keeps its original "Game" category since there's no Editor variant to hand visibility to.
+
+[Level Component](../level-component/), [System Component](../system-component/), and [LyShine Component](../lyshine-component/) all use this identical mechanic on their own category strings ("Level", "Game", and "UI" respectively).

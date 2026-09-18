@@ -7,6 +7,8 @@ weight: 400
 
 Every Class Creation Wizard template is defined by a `template.json` file placed in a `Templates/<TemplateName>/` directory. This file combines standard O3DE template metadata with a `class_wizard` block that the wizard uses to drive code generation and project integration.
 
+Read this page top to bottom and you'll go argument by argument: first through the standard O3DE fields ([`copyFiles`](#copyfiles), `createDirectories`) that the wizard extends rather than replaces, then into the wizard-only [`class_wizard` block](#the-class_wizard-block) -- where you'll find everything you need to actually author on top of it. Once you know this schema, see [Templates](templates/) for how every built-in template applies it.
+
 ---
 
 ## Full Schema
@@ -36,11 +38,28 @@ Every Class Creation Wizard template is defined by a `template.json` file placed
         "description": "Creates a custom type with optional interface.",
         "component_suffix": "MyType",
 
-        "input_vars": [ ... ],
-        "process_commands": [ ... ]
+        "input_vars": [
+            {
+                "input_type": "toggle",
+                "var_name": "include_extra_file",
+                "title": "Include Extra File",
+                "default_value": false,
+                "description": "Adds the optional interface header"
+            },
+            ...
+        ],
+        "process_commands": [
+            {
+                "command": "register_file_list",
+                "args": { "component_name": "${Name}${ComponentSuffix}" }
+            },
+            ...
+        ]
     }
 }
 ```
+
+Each array here can hold as many entries as the template needs -- one `input_vars` entry per field you want to collect, one `process_commands` entry per step you want to run. The single entries shown are just illustrative; see [input_vars](#input_vars) and [process_commands](#process_commands) below for every field each one supports.
 
 ---
 
@@ -327,47 +346,125 @@ Conditions gate file inclusion and command execution. They are evaluated against
 
 ## Complete Example
 
-A gem template for a dialogue effect component:
+[Data Asset](templates/data-asset/), a real built-in template, touches nearly every part of this schema:
 
 ```json
 {
-    "template_name": "DialogueEffect",
-    "display_name": "Dialogue Effect Template",
-    "summary": "A dialogue effect component for the cinematics system.",
-
+    "template_name": "DataAsset",
+    "origin": "Open 3D Engine - o3de.org",
+    "origin_url": "https://github.com/o3de/o3de",
+    "license": "Apache-2.0 or MIT",
+    "license_url": "https://github.com/o3de/o3de/blob/development/LICENSE.txt",
+    "display_name": "Data Asset Template",
+    "summary": "A template to create and register a Custom Data Asset.",
+    "canonical_tags": [
+        "Template"
+    ],
+    "user_tags": [
+        "DataAsset"
+    ],
+    "icon_path": "preview.png",
     "copyFiles": [
-        { "file": "Source/${Name}_DialogueEffect.cpp", "isTemplated": true },
-        { "file": "Source/${Name}_DialogueEffect.h", "isTemplated": true }
+        {
+            "file": "Source/${GemName}DataAssetSystemComponent.cpp",
+            "isTemplated": true
+        },
+        {
+            "file": "Source/${GemName}DataAssetSystemComponent.h",
+            "isTemplated": true
+        },
+        {
+            "file": "Source/${Name}Asset.cpp",
+            "isTemplated": true
+        },
+        {
+            "file": "Source/${Name}Asset.h",
+            "isTemplated": true
+        },
+        {
+            "file": "Include/${GemName}/${Name}Interface.h",
+            "isTemplated": true,
+            "isInterface": true,
+            "cleanup_hint": "interface",
+            "condition": "add_bus_interface"
+        }
     ],
-
     "createDirectories": [
-        { "dir": "Source" }
+        {
+            "dir": "Include/${GemName}"
+        },
+        {
+            "dir": "Source"
+        }
     ],
-
     "class_wizard": {
-        "display_name": "Dialogue Effect",
-        "class_name": "dialogue_effect",
-        "description": "Creates a new dialogue effect for the GS_Cinematics dialogue system.",
-        "component_suffix": "DialogueEffect",
+        "display_name": "Data Asset",
+        "class_name": "data_asset",
+        "description": "Creates a custom data asset with setreg configuration",
+        "component_suffix": "Asset",
 
-        "input_vars": [],
+        "input_vars": [
+            {
+                "input_type": "toggle",
+                "var_name": "add_bus_interface",
+                "title": "Add Bus Interface",
+                "default_value": true,
+                "description": "Create the Interface Bus header file"
+            },
+            {
+                "input_type": "text",
+                "var_name": "file_extension",
+                "title": "File Extension",
+                "default_value": "dataasset",
+                "required": true,
+                "description": "The file extension for this asset type (without dot)"
+            },
+            {
+                "input_type": "text",
+                "var_name": "asset_group",
+                "title": "Asset Group",
+                "default_value": "DataAssets",
+                "description": "The asset browser group for this asset type"
+            }
+        ],
 
         "process_commands": [
             {
+                "command": "add_gem_dependency",
+                "args": { "dependency": "AZ::AzFramework" }
+            },
+            {
                 "command": "register_file_list",
-                "args": { "component_name": "${Name}_${ComponentSuffix}" }
+                "args": { "component_name": "${GemName}DataAssetSystemComponent" }
+            },
+            {
+                "command": "register_file_list",
+                "args": { "component_name": "${Name}${ComponentSuffix}" }
             },
             {
                 "command": "register_module_descriptor",
-                "args": { "component_name": "${Name}_${ComponentSuffix}", "module_kind": "runtime" }
+                "args": { "component_name": "${GemName}DataAssetSystemComponent", "module_kind": "runtime" }
             },
             {
                 "command": "register_system_component",
-                "args": { "component_name": "${Name}_${ComponentSuffix}", "module_kind": "runtime" }
+                "args": { "component_name": "${GemName}DataAssetSystemComponent", "module_kind": "runtime" }
             },
             {
-                "command": "add_gem_dependency",
-                "args": { "dependency": "Gem::GS_Cinematics.API" }
+                "command": "register_system_component",
+                "args": { "component_name": "${GemName}DataAssetSystemComponent", "module_kind": "editor" }
+            },
+            {
+                "command": "register_generic_asset",
+                "args": {
+                    "asset_name": "${Name}${ComponentSuffix}",
+                    "asset_ext": "${file_extension}",
+                    "asset_group": "${asset_group}"
+                }
+            },
+            {
+                "command": "register_interface_header",
+                "condition": "add_bus_interface",
+                "args": { "component_name": "${Name}" }
             }
         ]
     }
@@ -375,10 +472,14 @@ A gem template for a dialogue effect component:
 ```
 
 This template:
-1. Generates two source files from the `Template/Source/` directory
-2. Registers them in the gem's CMake file list
-3. Adds the component to the module descriptor and system component list
-4. Adds `Gem::GS_Cinematics.API` as a build dependency (skipped if the gem is GS_Cinematics itself)
+1. Generates four files unconditionally -- a dedicated `${GemName}DataAssetSystemComponent` plus the `${Name}Asset` class itself -- and a fifth, conditional interface header gated on `add_bus_interface`, with `cleanup_hint: "interface"` to scrub it out cleanly if that toggle is off.
+2. Uses three different `input_vars` shapes in one template: a toggle, a required text field, and a free-text field with no fixed choices.
+3. Adds `AZ::AzFramework` as a build dependency, then registers both file pairs in the gem's CMake file list.
+4. Registers the system component's module descriptor, then adds it to `GetRequiredSystemComponents()` in *both* the runtime and editor modules, unconditionally -- the asset handler needs to exist in both.
+5. Registers a `GenericAssetHandler` for the asset using the user-provided file extension and asset group.
+6. Registers the interface header too, but only `if add_bus_interface`.
+
+See [Data Asset](templates/data-asset/) for the full field-by-field breakdown, and [Architecture > A Full-Stack Example](../architecture/#a-full-stack-example) for how this same template illustrates the wizard's execution order end to end.
 
 ---
 

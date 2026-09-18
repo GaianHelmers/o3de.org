@@ -168,3 +168,7 @@ The editor files carry `cleanup_hint: "editor"` -- if excluded, their `#include`
     }
 }
 ```
+
+## Design Notes
+
+Same mechanic again, this time on `AZ_CRC_CE("UI")`: both the runtime and Editor files start out categorized for the UI menu, and turning on `include_editor` triggers the same runtime-only `replace_text` clear described on [Basic Component](../basic-component/), so the generated Editor variant is what actually appears to users.
