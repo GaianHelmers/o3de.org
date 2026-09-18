@@ -39,7 +39,7 @@ A registration command never overwrites existing content, and it never assumes i
 
 ### A Full-Stack Example
 
-[Data Asset](../template-descriptor/templates/data-asset/) demonstrates this end to end. It has a conditional interface file with cleanup. It has three differently-shaped `input_vars`: a toggle, a required text field, and a free-text field. It has seven `process_commands`: an unconditional gem dependency, two file registrations, a module descriptor, two system component registrations (runtime and editor, both unconditional), a [built-in command](../commands/built-in-commands/) that wires up a `GenericAssetHandler`, and one command gated behind its own `add_bus_interface` toggle. After reading this page, that template reads as a composition of the pieces above. See its [full breakdown](../template-descriptor/templates/data-asset/) for the exact schema.
+[Data Asset](../template-descriptor/templates/data-asset/) demonstrates this end to end. It has a conditional interface file with cleanup. It has three differently-shaped `input_vars`: a toggle, a required text field, and a free-text field. It has eight `process_commands`: an unconditional gem dependency, two file registrations, a module descriptor, two system component registrations (runtime and editor, both unconditional), a [built-in command](../commands/built-in-commands/) that wires up a `GenericAssetHandler`, and one command gated behind its own `add_bus_interface` toggle. After reading this page, that template reads as a composition of the pieces above. See its [full breakdown](../template-descriptor/templates/data-asset/) for the exact schema.
 
 ---
 

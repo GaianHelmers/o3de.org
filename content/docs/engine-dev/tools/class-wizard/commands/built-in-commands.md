@@ -23,7 +23,7 @@ Adds the generated `.h` and `.cpp` files to the gem's CMake build target.
 |---|---|---|
 | `component_name` | string | Base filename (without extension) to register |
 
-**Behavior:** Locates the selected build target's `FILES_CMAKE` list file. Inserts `Source/{component_name}.h` and `Source/{component_name}.cpp` into the `set(FILES ...)` block. If the target uses inline sources instead of a cmake list file, appends a `target_sources(...)` block to `CMakeLists.txt`.
+**Behavior:** Resolves the file's actual header and source paths from `ctx.copy_files` -- the real paths the template staged, not an assumed `Source/{component_name}.h`/`.cpp`. Falls back to `Source/{component_name}.h`/`.cpp` only if no matching entry exists. If the file's `isEditor` flag is set, searches for an editor-specific CMake target (`Code/`, `Source/Tools/`, or a detected editor target name) instead of the runtime build target, falling back to the runtime target if none is found. Locates the resolved target's `FILES_CMAKE` list file and inserts the header and source into the `set(FILES ...)` block. If the target uses inline sources instead of a cmake list file, appends a `target_sources(...)` block to `CMakeLists.txt`.
 
 ---
 
@@ -85,12 +85,12 @@ Adds a gem dependency to the current build target's `BUILD_DEPENDENCIES` block i
 
 #### copy_file
 
-Copies a file from one location to another within the gem directory.
+Copies a file from one location to another within `ctx.dest_root`.
 
 | Arg | Type | Description |
 |---|---|---|
-| `source` | string | Source path relative to gem root |
-| `dest` | string | Destination path relative to gem root |
+| `source` | string | Source path relative to `dest_root` (the build target's source tree, not the gem root) |
+| `dest` | string | Destination path relative to `dest_root` |
 
 ---
 

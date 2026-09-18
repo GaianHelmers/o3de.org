@@ -174,7 +174,7 @@ Every command receives a `CommandContext` with these fields:
 | `dest_root` | `Path` | Root directory of the target gem (e.g. `D:\Project\Gem`) |
 | `namespace` | `str` | Gem namespace / name (e.g. `"GS_Interaction"`) |
 | `component_name` | `str` | Name of the component being created |
-| `build_target` | `CMakeTarget` | The selected CMake build target -- has `name`, `raw_name`, `kind`, `file` (the `Path` to its `CMakeLists.txt`), and `files_cmake_list` |
+| `build_target` | `CMakeTarget` or `None` | The selected CMake build target -- has `name`, `raw_name`, `kind`, `file` (the `Path` to its `CMakeLists.txt`), and `files_cmake_list`. Every built-in command that reads this guards against `None`. |
 | `variables` | `dict` | All resolved variables -- base vars (`Name`, `GemName`, `ComponentSuffix`) plus user input values |
 | `logger` | `callable` | Logging function -- call `ctx.logger("message")` |
 | `engine_path` | `Path` | Path to the O3DE engine root |
